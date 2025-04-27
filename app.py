@@ -291,4 +291,3 @@ if st.session_state.step in ['awaiting_confirmation', 'awaiting_provider_switch'
             chat_bubble(user_input, sender='user')
             bot_reply(user_input)
             update_progress_bar()
-#
