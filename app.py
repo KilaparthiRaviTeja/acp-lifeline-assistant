@@ -204,3 +204,10 @@ if st.session_state.step == 'awaiting_confirmation':
             chat_bubble(user_input, sender='user')
             bot_reply(user_input)
             st.rerun()
+# --- Reset Button ---
+if st.button("🔄 Start Over"):
+    st.session_state.clear()  # Clears the session state
+    st.session_state.step = 'start'  # Reset to the start of the process
+    st.session_state.chat_history = []  # Clear chat history
+    chat_bubble("You have successfully reset the application. Let's start fresh!", sender='bot')
+    st.experimental_rerun()  # Reload the app to reflect changes
