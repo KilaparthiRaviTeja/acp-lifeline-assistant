@@ -124,6 +124,7 @@ def save_user_data():
             "photo_hash": get_image_hash(photo)
         })
 
+# --- Reset Session Function ---
 def reset_session():
     st.session_state.clear()
     st.session_state.update({
