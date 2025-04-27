@@ -274,3 +274,21 @@ if st.session_state.step in ['awaiting_confirmation', 'awaiting_provider_switch'
             chat_bubble(user_input, sender='user')
             bot_reply(user_input)
             st.rerun()
+
+# --- Reset Chat Button ---
+if st.button("🔄 Reset Chat"):
+    chat_bubble("⚠️ Are you sure you want to reset and lose progress? (yes/no)", sender='bot')
+    st.session_state.awaiting_reset_confirm = True
+
+# If awaiting reset confirmation, allow user to type response
+if st.session_state.awaiting_reset_confirm:
+    with st.form("reset_confirm_form", clear_on_submit=True):
+        reset_response = st.text_input("Your response:")
+        submitted = st.form_submit_button("➤")
+        if submitted and reset_response:
+            chat_bubble(reset_response, sender='user')
+            if 'yes' in reset_response.lower():
+                reset_session()  # Reset session if user confirms
+            else:
+                st.session_state.awaiting_reset_confirm = False
+                chat_bubble("Reset cancelled.", sender='bot')
