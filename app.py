@@ -185,18 +185,19 @@ if st.session_state.step == 'awaiting_photo':
             for file in valid_files:
                 st.session_state.photos.append(file)
                 chat_bubble(f"📸 Uploaded: {file.name}", sender='bot')
-                st.image(BytesIO(file.getvalue()), caption=file.name, use_container_width=True)
+                st.image(BytesIO(file.getvalue()), caption=file.name, use_column_width=True)
 
             photo_hashes = [get_image_hash(file) for file in valid_files]
             if check_duplicate(st.session_state.user_id, photo_hashes):
                 st.session_state.duplicate = True
                 st.session_state.step = 'awaiting_provider_switch'
                 chat_bubble("⚠️ Duplicate detected! It looks like you're already registered.", sender='bot')
+                chat_bubble("Would you like to switch providers instead? (yes/no)", sender='bot')
             else:
                 st.session_state.step = 'awaiting_confirmation'
                 chat_bubble("✅ No duplicate found. Do you want to submit your details to NLAD? (yes/no)", sender='bot')
 
-if st.session_state.step == 'awaiting_confirmation':
+if st.session_state.step in ['awaiting_confirmation', 'awaiting_provider_switch']:
     with st.form("confirm_form", clear_on_submit=True):
         user_input = st.text_input("Your response:")
         submitted = st.form_submit_button("➤")
@@ -204,10 +205,8 @@ if st.session_state.step == 'awaiting_confirmation':
             chat_bubble(user_input, sender='user')
             bot_reply(user_input)
             st.rerun()
-# --- Reset Button ---
-if st.button("🔄 Start Over"):
-    st.session_state.clear()  # Clears the session state
-    st.session_state.step = 'start'  # Reset to the start of the process
-    st.session_state.chat_history = []  # Clear chat history
-    chat_bubble("You have successfully reset the application. Let's start fresh!", sender='bot')
-    st.rerun()  # Reload the app to reflect changes
+
+# --- Reset Chat Button ---
+if st.button("🔄 Reset Chat"):
+    chat_bubble("⚠️ Are you sure you want to reset and lose progress? (yes/no)", sender='bot')
+    st.session_state.awaiting_reset_confirm = True
