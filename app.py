@@ -199,7 +199,7 @@ if st.session_state.step == 'awaiting_photo':
             for file in valid_files:
                 st.session_state.photos.append(file)
                 chat_bubble(f"📸 Uploaded: {file.name}", sender='bot')
-                st.image(BytesIO(file.getvalue()), caption=file.name, use_column_width=True)
+                st.image(BytesIO(file.getvalue()), caption=file.name, use_container_width=True)
 
             photo_hashes = [get_image_hash(file) for file in valid_files]
             if check_duplicate(st.session_state.user_id, photo_hashes):
