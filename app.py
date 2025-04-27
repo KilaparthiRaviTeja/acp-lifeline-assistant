@@ -23,6 +23,16 @@ st.markdown("""
     .bot-bubble { background-color: #f1f1f1; color: black; float: left; clear: both; }
     .user-bubble { background-color: #d1e7dd; color: black; float: right; clear: both; }
     .clearfix::after { content: ""; display: table; clear: both; }
+    @media only screen and (max-width: 600px) {
+        .chat-bubble {
+            font-size: 14px;
+            max-width: 90%;
+        }
+        .bot-bubble, .user-bubble {
+            font-size: 14px;
+            padding: 10px;
+        }
+    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -42,7 +52,8 @@ if 'step' not in st.session_state:
         'duplicate': False,
         'chat_history': [],
         'progress': 0,
-        'awaiting_reset_confirm': False
+        'awaiting_reset_confirm': False,
+        'reminder_sent': False
     })
 
 # --- Existing Records (simulate database) ---
@@ -50,6 +61,19 @@ existing_records = [
     {"id": "123-45-6789", "photo_hash": "abcd1234"},
     {"id": "555-66-7777", "photo_hash": "efgh5678"},
 ]
+
+# --- FAQ System ---
+faq = {
+    "How do I apply for ACP or Lifeline?": "You can apply by providing your ID, uploading a photo, and confirming your details.",
+    "What documents are needed for verification?": "We need either your SSN or Tribal ID, along with a recent photo.",
+    "What happens after I submit my application?": "Your details are sent to NLAD for verification. Most applications are processed in 1–2 business days."
+}
+
+def show_faq():
+    st.sidebar.title("FAQ")
+    for question, answer in faq.items():
+        if st.sidebar.button(question):
+            st.sidebar.write(answer)
 
 # --- Chat Bubble ---
 def chat_bubble(message, sender='bot', save_to_history=True):
@@ -145,6 +169,37 @@ def bot_reply(user_input):
     elif step == 'done':
         chat_bubble("🙏 Thank you for using the assistant. Have a great day!", sender='bot')
 
+# --- Progress Update Enhancements ---
+def update_progress_bar():
+    if st.session_state.step == 'start':
+        st.session_state.progress = 0
+    elif st.session_state.step == 'awaiting_id':
+        st.session_state.progress = 20
+    elif st.session_state.step == 'awaiting_photo':
+        st.session_state.progress = 50
+    elif st.session_state.step == 'awaiting_confirmation':
+        st.session_state.progress = 80
+    elif st.session_state.step == 'done':
+        st.session_state.progress = 100
+    st.progress(st.session_state.progress)
+
+# --- Automatic Reminder System ---
+def send_reminder():
+    if st.session_state.step in ['awaiting_id', 'awaiting_photo'] and 'reminder_sent' not in st.session_state:
+        st.session_state.reminder_sent = True
+        chat_bubble("⚠️ You haven't completed the process. Would you like to continue? (yes/no)", sender='bot')
+
+# --- Reset Chat Button ---
+if st.button("🔄 Reset Chat"):
+    chat_bubble("⚠️ Are you sure you want to reset and lose progress? (yes/no)", sender='bot')
+    st.session_state.awaiting_reset_confirm = True
+
+# --- Display FAQ on Sidebar ---
+show_faq()
+
+# --- Call the Reminder System (if needed) ---
+send_reminder()
+
 # --- Forms and Uploads ---
 if st.session_state.step == 'start':
     if 'welcome_shown' not in st.session_state:
@@ -220,7 +275,3 @@ if st.session_state.step in ['awaiting_confirmation', 'awaiting_provider_switch'
             bot_reply(user_input)
             st.experimental_rerun()
 
-# --- Reset Chat Button ---
-if st.button("🔄 Reset Chat"):
-    chat_bubble("⚠️ Are you sure you want to reset and lose progress? (yes/no)", sender='bot')
-    st.session_state.awaiting_reset_confirm = True
