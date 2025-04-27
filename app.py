@@ -126,7 +126,21 @@ def save_user_data():
 
 def reset_session():
     st.session_state.clear()
-    st.rerun()
+    st.session_state.update({
+        'step': 'start',
+        'user_type': None,
+        'id_type': None,
+        'user_id': None,
+        'photos': [],
+        'application_type': None,
+        'confirmed': False,
+        'duplicate': False,
+        'chat_history': [],
+        'progress': 0,
+        'awaiting_reset_confirm': False,
+        'reminder_sent': False
+    })
+    st.experimental_rerun()
 
 # --- Bot Logic ---
 def bot_reply(user_input):
@@ -278,18 +292,3 @@ if st.session_state.step in ['awaiting_confirmation', 'awaiting_provider_switch'
             bot_reply(user_input)
             st.rerun()
 
-# --- Reset Chat Button ---
-if not st.session_state.awaiting_reset_confirm:
-    if st.button("🔄 Reset Chat", key="reset_button"):
-        chat_bubble("⚠️ Are you sure you want to reset and lose progress? (yes/no)", sender='bot')
-        st.session_state.awaiting_reset_confirm = True
-
-# If awaiting reset confirmation, allow user to type response
-if st.session_state.awaiting_reset_confirm:
-    with st.form("reset_confirm_form", clear_on_submit=True):
-        user_input = st.text_input("Confirm Reset (yes/no):")
-        submitted = st.form_submit_button("➤")
-        if submitted and user_input:
-            chat_bubble(user_input, sender='user')
-            bot_reply(user_input)
-            st.rerun()
