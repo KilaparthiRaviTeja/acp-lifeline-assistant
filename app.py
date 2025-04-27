@@ -210,4 +210,4 @@ if st.button("🔄 Start Over"):
     st.session_state.step = 'start'  # Reset to the start of the process
     st.session_state.chat_history = []  # Clear chat history
     chat_bubble("You have successfully reset the application. Let's start fresh!", sender='bot')
-    st.experimental_rerun()  # Reload the app to reflect changes
+    st.rerun()  # Reload the app to reflect changes
