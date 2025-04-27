@@ -206,12 +206,14 @@ if st.session_state.step == 'start':
         st.session_state.welcome_shown = True
         chat_bubble("Hi there! 👋 I’m here to help you apply for ACP or Lifeline.", sender='bot')
         chat_bubble("Are you a new user or an existing user?", sender='bot')
+    
     col1, col2 = st.columns(2)
     if col1.button("🆕 New"):
         st.session_state.user_type = 'new'
         st.session_state.step = 'ask_id_type'
         chat_bubble("New user selected.", sender='user')
         chat_bubble("What type of ID will you use?", sender='bot')
+    
     if col2.button("👤 Existing"):
         st.session_state.user_type = 'existing'
         st.session_state.step = 'ask_id_type'
@@ -225,6 +227,7 @@ if st.session_state.step == 'ask_id_type':
         st.session_state.step = 'awaiting_id'
         chat_bubble("SSN selected.", sender='user')
         chat_bubble("Please enter your SSN (123-45-6789).", sender='bot')
+    
     if col2.button("Tribal ID"):
         st.session_state.id_type = 'tribal'
         st.session_state.step = 'awaiting_id'
@@ -284,12 +287,9 @@ if not st.session_state.awaiting_reset_confirm:
 # If awaiting reset confirmation, allow user to type response
 if st.session_state.awaiting_reset_confirm:
     with st.form("reset_confirm_form", clear_on_submit=True):
-        reset_response = st.text_input("Your response:")
+        user_input = st.text_input("Confirm Reset (yes/no):")
         submitted = st.form_submit_button("➤")
-        if submitted and reset_response:
-            chat_bubble(reset_response, sender='user')
-            if 'yes' in reset_response.lower():
-                reset_session()  # Reset session if user confirms
-            else:
-                st.session_state.awaiting_reset_confirm = False
-                chat_bubble("Reset cancelled.", sender='bot')
+        if submitted and user_input:
+            chat_bubble(user_input, sender='user')
+            bot_reply(user_input)
+            st.rerun()
