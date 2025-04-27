@@ -33,7 +33,6 @@ st.sidebar.title("Welcome to our ACP/Lifeline assistant. Need help? Chat below!"
 if 'step' not in st.session_state:
     st.session_state.update({
         'step': 'start',
-        'user_name': None,
         'user_type': None,
         'id_type': None,
         'user_id': None,
@@ -45,6 +44,12 @@ if 'step' not in st.session_state:
         'progress': 0,
         'awaiting_reset_confirm': False
     })
+
+# --- Existing Records (simulate database) ---
+existing_records = [
+    {"id": "123-45-6789", "photo_hash": "abcd1234"},
+    {"id": "555-66-7777", "photo_hash": "efgh5678"},
+]
 
 # --- Chat Bubble ---
 def chat_bubble(message, sender='bot', save_to_history=True):
@@ -68,18 +73,7 @@ for msg in st.session_state.chat_history:
     chat_bubble(msg['text'], sender=msg['sender'], save_to_history=False)
 
 # --- Progress Bar ---
-def update_progress_bar():
-    if st.session_state.step == 'start':
-        st.session_state.progress = 0
-    elif st.session_state.step == 'awaiting_id':
-        st.session_state.progress = 20
-    elif st.session_state.step == 'awaiting_photo':
-        st.session_state.progress = 60
-    elif st.session_state.step == 'awaiting_confirmation':
-        st.session_state.progress = 80
-    elif st.session_state.step == 'done':
-        st.session_state.progress = 100
-    st.progress(st.session_state.progress)
+st.progress(st.session_state.progress)
 
 # --- Helpers ---
 def validate_id(user_input):
@@ -99,18 +93,34 @@ def check_duplicate(user_id, photo_hashes):
             return True
     return False
 
+def save_user_data():
+    for photo in st.session_state.photos:
+        existing_records.append({
+            "id": st.session_state.user_id,
+            "photo_hash": get_image_hash(photo)
+        })
+
+def reset_session():
+    st.session_state.clear()
+    st.experimental_rerun()
+
 # --- Bot Logic ---
 def bot_reply(user_input):
     step = st.session_state.step
 
-    if step == 'start':
-        chat_bubble(f"Hi there, {st.session_state.user_name}! 👋 I’m here to help you apply for ACP or Lifeline.", sender='bot')
+    if st.session_state.awaiting_reset_confirm:
+        if 'yes' in user_input.lower():
+            reset_session()
+        else:
+            st.session_state.awaiting_reset_confirm = False
+            chat_bubble("Reset cancelled.", sender='bot')
         return
 
     if step == 'awaiting_id':
         if validate_id(user_input):
             st.session_state.user_id = user_input
             st.session_state.step = 'awaiting_photo'
+            st.session_state.progress = 60
             chat_bubble("✅ ID confirmed. Now please upload your photo(s) for verification.", sender='bot')
             chat_bubble("📈 Progress: 60% complete!", sender='bot')
         else:
@@ -128,27 +138,31 @@ def bot_reply(user_input):
         else:
             chat_bubble("Please respond with 'yes' or 'no'.", sender='bot')
 
+    elif step == 'awaiting_provider_switch':
+        st.session_state.step = 'done'
+        chat_bubble("Thanks! We'll help you switch your provider soon.", sender='bot')
+
     elif step == 'done':
         chat_bubble("🙏 Thank you for using the assistant. Have a great day!", sender='bot')
 
-# --- Request User's Name ---
+# --- Forms and Uploads ---
 if st.session_state.step == 'start':
     if 'welcome_shown' not in st.session_state:
         st.session_state.welcome_shown = True
-        user_name = st.text_input("What's your name?")
-        if user_name:
-            st.session_state.user_name = user_name
-            st.session_state.step = 'ask_id_type'
-            chat_bubble(f"Hello, {user_name}! Ready to get started?", sender='bot')
+        chat_bubble("Hi there! 👋 I’m here to help you apply for ACP or Lifeline.", sender='bot')
+        chat_bubble("Are you a new user or an existing user?", sender='bot')
+    col1, col2 = st.columns(2)
+    if col1.button("🆕 New"):
+        st.session_state.user_type = 'new'
+        st.session_state.step = 'ask_id_type'
+        chat_bubble("New user selected.", sender='user')
+        chat_bubble("What type of ID will you use?", sender='bot')
+    if col2.button("👤 Existing"):
+        st.session_state.user_type = 'existing'
+        st.session_state.step = 'ask_id_type'
+        chat_bubble("Existing user selected.", sender='user')
+        chat_bubble("What type of ID will you use?", sender='bot')
 
-# --- Help Option ---
-if st.button("🆘 Need Help?"):
-    chat_bubble("Here are some tips:\n1. Enter your ID carefully.\n2. Upload clear photos.\n3. If stuck, just ask for help!", sender='bot')
-
-# --- Progress Bar ---
-update_progress_bar()
-
-# --- Steps for ID and Photo Upload ---
 if st.session_state.step == 'ask_id_type':
     col1, col2 = st.columns(2)
     if col1.button("SSN"):
@@ -169,7 +183,7 @@ if st.session_state.step == 'awaiting_id':
         if submitted and user_input:
             chat_bubble(user_input, sender='user')
             bot_reply(user_input)
-            st.rerun()
+            st.experimental_rerun()
 
 if st.session_state.step == 'awaiting_photo':
     uploaded_files = st.file_uploader("Upload your photo(s) (jpg/png, max 5MB each)", type=["jpg", "jpeg", "png"], accept_multiple_files=True)
@@ -204,7 +218,7 @@ if st.session_state.step in ['awaiting_confirmation', 'awaiting_provider_switch'
         if submitted and user_input:
             chat_bubble(user_input, sender='user')
             bot_reply(user_input)
-            st.rerun()
+            st.experimental_rerun()
 
 # --- Reset Chat Button ---
 if st.button("🔄 Reset Chat"):
