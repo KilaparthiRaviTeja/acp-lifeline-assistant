@@ -208,6 +208,28 @@ if st.button("🔄 Reset Chat"):
     chat_bubble("⚠️ Are you sure you want to reset and lose progress? Type 'yes' to confirm or 'no' to cancel.", sender='bot')
     st.session_state.awaiting_reset_confirm = True
 
+# --- Bot Logic ---
+def bot_reply(user_input):
+    step = st.session_state.step
+
+    if st.session_state.awaiting_reset_confirm:
+        # Provide a text input section for user to type 'yes' or 'no'
+        user_response = st.text_input("Type 'yes' to confirm reset or 'no' to cancel", key="reset_input")
+        
+        if user_response:
+            # Check user input for confirmation
+            if 'yes' in user_response.lower():
+                reset_session()  # Reset session and progress
+            elif 'no' in user_response.lower():
+                st.session_state.awaiting_reset_confirm = False
+                chat_bubble("Reset cancelled.", sender='bot')
+            else:
+                chat_bubble("Please type 'yes' to confirm or 'no' to cancel.", sender='bot')
+
+        return
+
+
+
 # --- Display FAQ on Sidebar ---
 show_faq()
 
