@@ -102,7 +102,7 @@ def save_user_data():
 
 def reset_session():
     st.session_state.clear()
-    st.experimental_rerun()
+    st.rerun()
 
 # --- Bot Logic ---
 def bot_reply(user_input):
@@ -183,7 +183,7 @@ if st.session_state.step == 'awaiting_id':
         if submitted and user_input:
             chat_bubble(user_input, sender='user')
             bot_reply(user_input)
-            st.experimental_rerun()
+            st.rerun()
 
 if st.session_state.step == 'awaiting_photo':
     uploaded_files = st.file_uploader("Upload your photo(s) (jpg/png, max 5MB each)", type=["jpg", "jpeg", "png"], accept_multiple_files=True)
@@ -218,7 +218,7 @@ if st.session_state.step in ['awaiting_confirmation', 'awaiting_provider_switch'
         if submitted and user_input:
             chat_bubble(user_input, sender='user')
             bot_reply(user_input)
-            st.experimental_rerun()
+            st.rerun()
 
 # --- Reset Chat Button ---
 if st.button("🔄 Reset Chat"):
