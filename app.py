@@ -147,11 +147,16 @@ def bot_reply(user_input):
     step = st.session_state.step
 
     if st.session_state.awaiting_reset_confirm:
-        if 'yes' in user_input.lower():
-            reset_session()
-        else:
-            st.session_state.awaiting_reset_confirm = False
-            chat_bubble("Reset cancelled.", sender='bot')
+        user_response = st.text_input("Type 'yes' to confirm reset or 'no' to cancel", key="reset_input")
+        
+        if user_response:
+            if 'yes' in user_response.lower():
+                reset_session()  # Reset session and progress
+            elif 'no' in user_response.lower():
+                st.session_state.awaiting_reset_confirm = False
+                chat_bubble("Reset cancelled.", sender='bot')
+            else:
+                chat_bubble("Please type 'yes' to confirm or 'no' to cancel.", sender='bot')
         return
 
     if step == 'awaiting_id':
@@ -208,28 +213,6 @@ if st.button("🔄 Reset Chat"):
     chat_bubble("⚠️ Are you sure you want to reset and lose progress? Type 'yes' to confirm or 'no' to cancel.", sender='bot')
     st.session_state.awaiting_reset_confirm = True
 
-# --- Bot Logic ---
-def bot_reply(user_input):
-    step = st.session_state.step
-
-    if st.session_state.awaiting_reset_confirm:
-        # Provide a text input section for user to type 'yes' or 'no'
-        user_response = st.text_input("Type 'yes' to confirm reset or 'no' to cancel", key="reset_input")
-        
-        if user_response:
-            # Check user input for confirmation
-            if 'yes' in user_response.lower():
-                reset_session()  # Reset session and progress
-            elif 'no' in user_response.lower():
-                st.session_state.awaiting_reset_confirm = False
-                chat_bubble("Reset cancelled.", sender='bot')
-            else:
-                chat_bubble("Please type 'yes' to confirm or 'no' to cancel.", sender='bot')
-
-        return
-
-
-
 # --- Display FAQ on Sidebar ---
 show_faq()
 
@@ -244,72 +227,25 @@ if st.session_state.step == 'start':
         chat_bubble("Are you a new user or an existing user?", sender='bot')
     
     col1, col2 = st.columns(2)
-    if col1.button("🆕 New"):
+    if col1.button("🆕 New User"):
+        st.session_state.step = 'awaiting_id'
         st.session_state.user_type = 'new'
-        st.session_state.step = 'ask_id_type'
-        chat_bubble("New user selected.", sender='user')
-        chat_bubble("What type of ID will you use?", sender='bot')
-    
-    if col2.button("👤 Existing"):
+    elif col2.button("🔄 Existing User"):
+        st.session_state.step = 'awaiting_id'
         st.session_state.user_type = 'existing'
-        st.session_state.step = 'ask_id_type'
-        chat_bubble("Existing user selected.", sender='user')
-        chat_bubble("What type of ID will you use?", sender='bot')
-
-if st.session_state.step == 'ask_id_type':
-    col1, col2 = st.columns(2)
-    if col1.button("SSN"):
-        st.session_state.id_type = 'ssn'
-        st.session_state.step = 'awaiting_id'
-        chat_bubble("SSN selected.", sender='user')
-        chat_bubble("Please enter your SSN (123-45-6789).", sender='bot')
-    
-    if col2.button("Tribal ID"):
-        st.session_state.id_type = 'tribal'
-        st.session_state.step = 'awaiting_id'
-        chat_bubble("Tribal ID selected.", sender='user')
-        chat_bubble("Please enter your Tribal ID (at least 5 digits).", sender='bot')
 
 if st.session_state.step == 'awaiting_id':
-    with st.form("id_form", clear_on_submit=True):
-        user_input = st.text_input("Enter your ID:")
-        submitted = st.form_submit_button("➤")
-        if submitted and user_input:
-            chat_bubble(user_input, sender='user')
-            bot_reply(user_input)
-            update_progress_bar()
+    user_input = st.text_input("Please enter your SSN or Tribal ID:")
+    if user_input:
+        bot_reply(user_input)
 
 if st.session_state.step == 'awaiting_photo':
-    uploaded_files = st.file_uploader("Upload your photo(s) (jpg/png, max 5MB each)", type=["jpg", "jpeg", "png"], accept_multiple_files=True)
-    if uploaded_files:
-        valid_files = []
-        for uploaded_file in uploaded_files:
-            if uploaded_file.size > 5 * 1024 * 1024:
-                chat_bubble(f"⚠️ {uploaded_file.name} is too large (>5MB). Please upload a smaller file.", sender='bot')
-            else:
-                valid_files.append(uploaded_file)
+    photo = st.file_uploader("Please upload a photo for verification:", type=['jpg', 'jpeg', 'png'])
+    if photo:
+        st.session_state.photos.append(photo)
+        chat_bubble(f"✅ Photo uploaded successfully. {len(st.session_state.photos)} photo(s) added.", sender='bot')
 
-        if valid_files:
-            for file in valid_files:
-                st.session_state.photos.append(file)
-                chat_bubble(f"📸 Uploaded: {file.name}", sender='bot')
-                st.image(BytesIO(file.getvalue()), caption=file.name, use_container_width=True)
-
-            photo_hashes = [get_image_hash(file) for file in valid_files]
-            if check_duplicate(st.session_state.user_id, photo_hashes):
-                st.session_state.duplicate = True
-                st.session_state.step = 'awaiting_provider_switch'
-                chat_bubble("⚠️ Duplicate detected! It looks like you're already registered.", sender='bot')
-                chat_bubble("Would you like to switch providers instead? (yes/no)", sender='bot')
-            else:
-                st.session_state.step = 'awaiting_confirmation'
-                chat_bubble("✅ No duplicate found. Do you want to submit your details to NLAD? (yes/no)", sender='bot')
-
-if st.session_state.step in ['awaiting_confirmation', 'awaiting_provider_switch']:
-    with st.form("confirm_form", clear_on_submit=True):
-        user_input = st.text_input("Your response:")
-        submitted = st.form_submit_button("➤")
-        if submitted and user_input:
-            chat_bubble(user_input, sender='user')
-            bot_reply(user_input)
-            update_progress_bar()
+if st.session_state.step == 'awaiting_confirmation':
+    user_input = st.text_input("Do you confirm the details? (yes/no)")
+    if user_input:
+        bot_reply(user_input)
