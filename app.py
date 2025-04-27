@@ -121,6 +121,7 @@ def bot_reply(user_input):
             st.session_state.user_id = user_input
             st.session_state.step = 'awaiting_photo'
             st.session_state.progress = 60
+            st.progress(st.session_state.progress)
             chat_bubble("✅ ID confirmed. Now please upload your photo(s) for verification.", sender='bot')
             chat_bubble("📈 Progress: 60% complete!", sender='bot')
         else:
@@ -131,6 +132,8 @@ def bot_reply(user_input):
             save_user_data()
             st.session_state.confirmed = True
             st.session_state.step = 'done'
+            st.session_state.progress = 100
+            st.progress(st.session_state.progress)
             chat_bubble("✅ Details sent to NLAD.", sender='bot')
             chat_bubble("📅 Most applications are processed in 1–2 business days.", sender='bot')
         elif 'no' in user_input.lower():
@@ -221,7 +224,6 @@ if st.session_state.step in ['awaiting_confirmation', 'awaiting_provider_switch'
             st.rerun()
 
 # --- Reset Chat Button ---
-# --- Reset Chat Button ---
 if st.button("🔄 Reset Chat"):
     chat_bubble("⚠️ Are you sure you want to reset and lose progress? (yes/no)", sender='bot')
     st.session_state.awaiting_reset_confirm = True
@@ -238,4 +240,3 @@ if st.session_state.awaiting_reset_confirm:
             else:
                 st.session_state.awaiting_reset_confirm = False
                 chat_bubble("Reset cancelled.", sender='bot')
-
