@@ -8,9 +8,6 @@ from PIL import Image
 # --- Page Config ---
 st.set_page_config(page_title="ACP/Lifeline Assistant", layout="wide")
 
-# --- Title ---
-st.title("ACP/Lifeline Assistant")
-
 # --- Style ---
 st.markdown("""
     <style>
@@ -36,9 +33,6 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# --- Sidebar ---
-st.sidebar.title("Welcome to our ACP/Lifeline assistant. Need help? Chat below!")
-
 # --- Initialize Session State ---
 if 'step' not in st.session_state:
     st.session_state.update({
@@ -53,7 +47,8 @@ if 'step' not in st.session_state:
         'chat_history': [],
         'progress': 0,
         'awaiting_reset_confirm': False,
-        'reminder_sent': False
+        'reminder_sent': False,
+        'reset_confirm': False,
     })
 
 # --- Existing Records (simulate database) ---
@@ -69,13 +64,29 @@ faq = {
     "What happens after I submit my application?": "Your details are sent to NLAD for verification. Most applications are processed in 1–2 business days."
 }
 
-def show_faq():
-    st.sidebar.title("FAQ")
-    for question, answer in faq.items():
-        if st.sidebar.button(question):
-            st.sidebar.write(answer)
+# --- Sidebar Content ---
+with st.sidebar:
+    st.title("Welcome to our ACP/Lifeline assistant.\nNeed help? Chat below!")
+    if st.button("🔄 Reset Chat"):
+        st.session_state.reset_confirm = True
 
-# --- Chat Bubble ---
+    if st.session_state.reset_confirm:
+        st.warning("⚠️ Are you sure you want to reset and lose progress?")
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("✅ Yes, Reset"):
+                st.session_state.clear()
+                st.experimental_rerun()
+        with col2:
+            if st.button("❌ No, Cancel"):
+                st.session_state.reset_confirm = False
+
+    st.header("FAQ")
+    for question, answer in faq.items():
+        if st.button(question):
+            st.info(answer)
+
+# --- Chat Bubble Function ---
 def chat_bubble(message, sender='bot', save_to_history=True):
     avatar = "🤖" if sender == 'bot' else "🧑"
     bubble_class = 'bot-bubble' if sender == 'bot' else 'user-bubble'
@@ -96,7 +107,7 @@ def chat_bubble(message, sender='bot', save_to_history=True):
 for msg in st.session_state.chat_history:
     chat_bubble(msg['text'], sender=msg['sender'], save_to_history=False)
 
-# --- Helpers ---
+# --- Helper Functions ---
 def validate_id(user_input):
     if st.session_state.id_type == 'ssn':
         return bool(re.match(r"^\d{3}-\d{2}-\d{4}$", user_input))
@@ -121,45 +132,9 @@ def save_user_data():
             "photo_hash": photo['hash']
         })
 
-def reset_session():
-    with st.spinner('Resetting chat...'):
-        time.sleep(1)
-    st.session_state.clear()
-    st.session_state.update({
-        'step': 'start',
-        'user_type': None,
-        'id_type': None,
-        'user_id': None,
-        'photos': [],
-        'application_type': None,
-        'confirmed': False,
-        'duplicate': False,
-        'chat_history': [],
-        'progress': 0,
-        'awaiting_reset_confirm': False,
-        'reminder_sent': False
-    })
-    st.experimental_rerun()
-
-# --- Bot Logic ---
 def bot_reply(user_input):
     step = st.session_state.step
 
-    # Handle reset confirmation
-    if st.session_state.awaiting_reset_confirm:
-        if user_input.strip().lower() == 'yes':
-            chat_bubble("🔄 Resetting the chat...", sender='bot')
-            reset_session()
-            return
-        elif user_input.strip().lower() == 'no':
-            st.session_state.awaiting_reset_confirm = False
-            chat_bubble("👍 Please continue with your application.", sender='bot')
-            return
-        else:
-            chat_bubble("⚠️ Please type 'yes' or 'no' to confirm reset.", sender='bot')
-            return
-
-    # Normal conversation
     if step == 'awaiting_id':
         if validate_id(user_input):
             st.session_state.user_id = user_input
@@ -195,7 +170,6 @@ def bot_reply(user_input):
     elif step == 'done':
         chat_bubble("🙏 Thank you for using the assistant. Have a great day!", sender='bot')
 
-# --- Progress Update ---
 def update_progress_bar():
     target_progress = {
         'start': 0,
@@ -216,25 +190,9 @@ def update_progress_bar():
         progress_bar.progress(current_progress)
         time.sleep(0.02)
 
-# --- Automatic Reminder ---
-def send_reminder():
-    if st.session_state.step in ['awaiting_id', 'awaiting_photo'] and not st.session_state.reminder_sent:
-        st.session_state.reminder_sent = True
-        chat_bubble("⚠️ You haven't completed the process. Would you like to continue? (yes/no)", sender='bot')
+# --- Main Chat Logic ---
+st.title("ACP/Lifeline Assistant")
 
-# --- Reset Button on Sidebar ---
-with st.sidebar:
-    if st.button("🔄 Reset Chat"):
-        chat_bubble("⚠️ Are you sure you want to reset and lose progress? (yes/no)", sender='bot')
-        st.session_state.awaiting_reset_confirm = True
-
-# --- Display FAQ on Sidebar ---
-show_faq()
-
-# --- Call Reminder System (if needed) ---
-send_reminder()
-
-# --- Forms and Uploads ---
 if st.session_state.step == 'start':
     if 'welcome_shown' not in st.session_state:
         st.session_state.welcome_shown = True
