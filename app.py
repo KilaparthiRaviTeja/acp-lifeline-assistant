@@ -246,7 +246,11 @@ if st.session_state.step == 'awaiting_id':
             bot_reply(user_input)
 
 if st.session_state.step == 'awaiting_photo':
-    uploaded_files = st.file_uploader("Upload your photo(s) (jpg/png, max 5MB each)", type=["jpg", "jpeg", "png"], accept_multiple_files=True)
+    uploaded_files = st.file_uploader(
+        "Upload your photo(s) (jpg/png, max 5MB each)", 
+        type=["jpg", "jpeg", "png"], 
+        accept_multiple_files=True
+    )
     if uploaded_files:
         valid_files = []
         for uploaded_file in uploaded_files:
@@ -256,13 +260,17 @@ if st.session_state.step == 'awaiting_photo':
                 valid_files.append(uploaded_file)
 
         if valid_files:
-            # Display photo preview
+            # Display photo preview using the new parameter
             for uploaded_file in valid_files:
                 image = Image.open(uploaded_file)
-                st.image(image, caption=f"Preview: {uploaded_file.name}", use_column_width=True)
+                st.image(
+                    image,
+                    caption=f"Preview: {uploaded_file.name}",
+                    use_container_width=True
+                )
 
-            # Check for duplicates
-            photo_hashes = [get_image_hash(file) for file in valid_files]
+            # Then perform your duplicate check and next steps
+            photo_hashes = [get_image_hash(f) for f in valid_files]
             if check_duplicate(st.session_state.user_id, photo_hashes):
                 st.session_state.duplicate = True
                 st.session_state.step = 'awaiting_provider_switch'
@@ -270,6 +278,9 @@ if st.session_state.step == 'awaiting_photo':
             else:
                 st.session_state.step = 'awaiting_confirmation'
                 chat_bubble("✅ No duplicate found. Submit to NLAD? (yes/no)", sender='bot')
+            update_progress_bar()
+            st.rerun()  # move on immediately
+
 
 
 if st.session_state.step in ['awaiting_confirmation', 'awaiting_provider_switch']:
