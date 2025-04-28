@@ -3,6 +3,7 @@ from io import BytesIO
 import re
 import time
 import imagehash
+import base64
 from PIL import Image
 
 # --- Page Config ---
@@ -247,8 +248,8 @@ if st.session_state.step == 'awaiting_id':
 
 if st.session_state.step == 'awaiting_photo':
     uploaded_files = st.file_uploader(
-        "Upload your photo(s) (jpg/png, max 5MB each)", 
-        type=["jpg", "jpeg", "png"], 
+        "Upload your photo(s) (jpg/png, max 5MB each)",
+        type=["jpg", "jpeg", "png"],
         accept_multiple_files=True
     )
     if uploaded_files:
@@ -260,24 +261,36 @@ if st.session_state.step == 'awaiting_photo':
                 valid_files.append(uploaded_file)
 
         if valid_files:
-            # Display photo preview using the new parameter
-            for uploaded_file in valid_files:
-                image = Image.open(uploaded_file)
-                st.image(
-                    image,
-                    caption=f"Preview: {uploaded_file.name}",
-                    use_container_width=True
+            for file in valid_files:
+                # 1. Compute and store hash
+                file_hash = get_image_hash(file)
+                st.session_state.photos.append({"file": file, "hash": file_hash})
+
+                # 2. Build Base64 data URI
+                file_bytes = file.getvalue()
+                b64 = base64.b64encode(file_bytes).decode()
+                img_html = (
+                    f"📸 {file.name}<br>"
+                    f"<img src='data:image/png;base64,{b64}' "
+                    f"style='max-width:200px;border-radius:8px;'/>"
                 )
 
-            # Then perform your duplicate check and next steps
-            photo_hashes = [get_image_hash(f) for f in valid_files]
+                # 3. Inject into the chat bubble as HTML
+                chat_bubble(img_html, sender='bot')
+
+            # 4. Move on to next step
+            photo_hashes = [p['hash'] for p in st.session_state.photos]
             if check_duplicate(st.session_state.user_id, photo_hashes):
                 st.session_state.duplicate = True
                 st.session_state.step = 'awaiting_provider_switch'
-                chat_bubble("⚠️ Duplicate detected. Switch provider? (yes/no)", sender='bot')
+                chat_bubble("⚠️ Duplicate detected. Switch provider?", sender='bot')
             else:
                 st.session_state.step = 'awaiting_confirmation'
                 chat_bubble("✅ No duplicate found. Submit to NLAD?", sender='bot')
+
+            update_progress_bar()
+            st.rerun()
+
 
 if st.session_state.step == 'awaiting_confirmation':
     col1, col2 = st.columns(2)
