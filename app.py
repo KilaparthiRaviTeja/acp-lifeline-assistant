@@ -279,7 +279,7 @@ if st.session_state.step == 'awaiting_photo':
                 st.session_state.step = 'awaiting_confirmation'
                 chat_bubble("✅ No duplicate found. Submit to NLAD? (yes/no)", sender='bot')
             update_progress_bar()
-            st.rerun()  # move on immediately
+            
 
 
 
