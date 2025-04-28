@@ -96,7 +96,6 @@ def chat_bubble(message, sender='bot', save_to_history=True):
 for msg in st.session_state.chat_history:
     chat_bubble(msg['text'], sender=msg['sender'], save_to_history=False)
 
-
 # --- Helpers ---
 def validate_id(user_input):
     if st.session_state.id_type == 'ssn':
@@ -122,8 +121,9 @@ def save_user_data():
             "photo_hash": photo['hash']
         })
 
-
 def reset_session():
+    with st.spinner('Resetting chat...'):
+        time.sleep(1)
     st.session_state.clear()
     st.session_state.update({
         'step': 'start',
@@ -145,14 +145,21 @@ def reset_session():
 def bot_reply(user_input):
     step = st.session_state.step
 
+    # Handle reset confirmation
     if st.session_state.awaiting_reset_confirm:
-        if 'yes' in user_input.lower():
+        if user_input.strip().lower() == 'yes':
+            chat_bubble("🔄 Resetting the chat...", sender='bot')
             reset_session()
-        else:
+            return
+        elif user_input.strip().lower() == 'no':
             st.session_state.awaiting_reset_confirm = False
-            chat_bubble("Reset cancelled.", sender='bot')
-        return
+            chat_bubble("👍 Please continue with your application.", sender='bot')
+            return
+        else:
+            chat_bubble("⚠️ Please type 'yes' or 'no' to confirm reset.", sender='bot')
+            return
 
+    # Normal conversation
     if step == 'awaiting_id':
         if validate_id(user_input):
             st.session_state.user_id = user_input
@@ -164,25 +171,31 @@ def bot_reply(user_input):
             chat_bubble("⚠️ Please enter a valid SSN (123-45-6789) or Tribal ID (at least 5 digits).", sender='bot')
 
     elif step == 'awaiting_confirmation':
-        if 'yes' in user_input.lower():
+        if user_input.strip().lower() == 'yes':
             save_user_data()
             st.session_state.confirmed = True
             st.session_state.step = 'done'
             chat_bubble("✅ Details sent to NLAD.", sender='bot')
             chat_bubble("📅 Most applications are processed in 1–2 business days.", sender='bot')
-        elif 'no' in user_input.lower():
+        elif user_input.strip().lower() == 'no':
             chat_bubble("Okay! Let me know when you're ready.", sender='bot')
         else:
-            chat_bubble("Please respond with 'yes' or 'no'.", sender='bot')
+            chat_bubble("⚠️ Please respond with 'yes' or 'no'.", sender='bot')
 
     elif step == 'awaiting_provider_switch':
-        st.session_state.step = 'done'
-        chat_bubble("Thanks! We'll help you switch your provider soon.", sender='bot')
+        if user_input.strip().lower() == 'yes':
+            st.session_state.step = 'done'
+            chat_bubble("Thanks! We'll help you switch your provider soon.", sender='bot')
+        elif user_input.strip().lower() == 'no':
+            st.session_state.step = 'done'
+            chat_bubble("Okay, your current provider will remain active.", sender='bot')
+        else:
+            chat_bubble("⚠️ Please respond with 'yes' or 'no'.", sender='bot')
 
     elif step == 'done':
         chat_bubble("🙏 Thank you for using the assistant. Have a great day!", sender='bot')
 
-# --- Progress Update Enhancements ---
+# --- Progress Update ---
 def update_progress_bar():
     target_progress = {
         'start': 0,
@@ -193,7 +206,7 @@ def update_progress_bar():
     }.get(st.session_state.step, st.session_state.progress)
 
     current_progress = st.session_state.progress
-    st.session_state.progress = target_progress  # Update session state
+    st.session_state.progress = target_progress
 
     progress_bar = st.empty()
     while current_progress < target_progress:
@@ -203,22 +216,22 @@ def update_progress_bar():
         progress_bar.progress(current_progress)
         time.sleep(0.02)
 
-# --- Automatic Reminder System ---
+# --- Automatic Reminder ---
 def send_reminder():
     if st.session_state.step in ['awaiting_id', 'awaiting_photo'] and not st.session_state.reminder_sent:
         st.session_state.reminder_sent = True
         chat_bubble("⚠️ You haven't completed the process. Would you like to continue? (yes/no)", sender='bot')
 
+# --- Reset Button on Sidebar ---
 with st.sidebar:
     if st.button("🔄 Reset Chat"):
         chat_bubble("⚠️ Are you sure you want to reset and lose progress? (yes/no)", sender='bot')
         st.session_state.awaiting_reset_confirm = True
 
-
 # --- Display FAQ on Sidebar ---
 show_faq()
 
-# --- Call the Reminder System (if needed) ---
+# --- Call Reminder System (if needed) ---
 send_reminder()
 
 # --- Forms and Uploads ---
@@ -227,14 +240,14 @@ if st.session_state.step == 'start':
         st.session_state.welcome_shown = True
         chat_bubble("Hi there! 👋 I’m here to help you apply for ACP or Lifeline.", sender='bot')
         chat_bubble("Are you a new user or an existing user?", sender='bot')
-    
+
     col1, col2 = st.columns(2)
     if col1.button("🆕 New"):
         st.session_state.user_type = 'new'
         st.session_state.step = 'ask_id_type'
         chat_bubble("New user selected.", sender='user')
         chat_bubble("What type of ID will you use?", sender='bot')
-    
+
     if col2.button("👤 Existing"):
         st.session_state.user_type = 'existing'
         st.session_state.step = 'ask_id_type'
@@ -248,7 +261,7 @@ if st.session_state.step == 'ask_id_type':
         st.session_state.step = 'awaiting_id'
         chat_bubble("SSN selected.", sender='user')
         chat_bubble("Please enter your SSN (123-45-6789).", sender='bot')
-    
+
     if col2.button("Tribal ID"):
         st.session_state.id_type = 'tribal'
         st.session_state.step = 'awaiting_id'
@@ -280,7 +293,6 @@ if st.session_state.step == 'awaiting_photo':
                 st.session_state.photos.append({"file": file, "hash": file_hash})
                 chat_bubble(f"📸 Uploaded: {file.name}", sender='bot')
                 st.image(BytesIO(file.getvalue()), caption=file.name, use_column_width=True)
-
 
             photo_hashes = [get_image_hash(file) for file in valid_files]
             if check_duplicate(st.session_state.user_id, photo_hashes):
