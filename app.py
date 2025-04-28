@@ -154,116 +154,26 @@ if st.session_state.awaiting_reset_confirm:
 
 else:
     # User text input
-    user_input = st.text_input("You:", key='user_input')
-
+    user_input = st.text_input("Your response:", key="response")
     if user_input:
         chat_bubble(user_input, sender='user')
-
+        # Handle bot response based on current step
         if st.session_state.step == 'start':
-            chat_bubble("👋 Welcome! Please enter your ID number.", sender='bot')
+            chat_bubble("Hi there! 👋 I’m here to help you apply for ACP or Lifeline.", sender='bot')
+            chat_bubble("Are you a new user or an existing user?", sender='bot')
             st.session_state.step = 'awaiting_id'
-            update_progress_bar()
 
         elif st.session_state.step == 'awaiting_id':
-            st.session_state.user_id = user_input.strip()
-            chat_bubble(f"📸 Great! Now upload a photo for ID verification.", sender='bot')
+            chat_bubble("Please enter your ID number", sender='bot')
             st.session_state.step = 'awaiting_photo'
-            update_progress_bar()
 
         elif st.session_state.step == 'awaiting_photo':
-            chat_bubble("📸 Please upload your photo using the uploader below.", sender='bot')
+            chat_bubble("Please upload your photo", sender='bot')
+            st.session_state.step = 'awaiting_confirmation'
 
         elif st.session_state.step == 'awaiting_confirmation':
-            if user_input.lower() == 'yes':
-                save_user_data()
-                chat_bubble("🎉 Your application has been submitted!", sender='bot')
-                st.session_state.step = 'done'
-                update_progress_bar()
-            elif user_input.lower() == 'no':
-                chat_bubble("🔄 Let's start over. Please enter your ID number.", sender='bot')
-                st.session_state.step = 'awaiting_id'
-                update_progress_bar()
-            else:
-                chat_bubble("❓ Please type 'yes' to confirm or 'no' to restart.", sender='bot')
+            chat_bubble("Please confirm your details for submission", sender='bot')
+            st.session_state.step = 'done'
 
-    # Upload section (photo uploader)
-    if st.session_state.step == 'awaiting_photo':
-        uploaded_file = st.file_uploader("Upload your photo here", type=['jpg', 'jpeg', 'png'])
-
-        if uploaded_file:
-            uploaded_hash = get_image_hash(uploaded_file)
-
-            duplicate = False
-            for record in existing_records:
-                if record['id'] == st.session_state.user_id or record['photo_hash'] == uploaded_hash:
-                    duplicate = True
-                    break
-
-            if duplicate:
-                chat_bubble("🚫 Duplicate detected! You've already submitted before.", sender='bot')
-            else:
-                st.session_state.photos.append(uploaded_file)
-
-                # Display mini thumbnail preview
-                st.image(uploaded_file, width=150, caption="Uploaded Photo Preview")
-
-                chat_bubble("✅ Photo uploaded successfully! Confirm submission? (yes/no)", sender='bot')
-                st.session_state.step = 'awaiting_confirmation'
-                update_progress_bar()
-
-    # Reminder if user stuck
-    send_reminder()
-
-# CSS for chat bubbles & animations
-st.markdown("""
-    <style>
-    .chat-bubble {
-        max-width: 75%;
-        padding: 12px 18px;
-        margin: 10px;
-        border-radius: 18px;
-        font-size: 16px;
-        line-height: 1.6;
-        animation: fadeIn 0.6s ease;
-        box-shadow: 0px 2px 5px rgba(0,0,0,0.1);
-        font-family: 'Arial', sans-serif;
-    }
-    .user-bubble {
-        background-color: #DCF8C6;
-        margin-left: auto;
-        text-align: right;
-        border-top-left-radius: 0;
-    }
-    .bot-bubble {
-        background-color: #F1F0F0;
-        margin-right: auto;
-        text-align: left;
-        border-top-right-radius: 0;
-    }
-    .chat-bubble strong {
-        font-size: 14px;
-        color: #5A5A5A;
-    }
-    .chat-bubble .bot-bubble strong {
-        color: #333;
-    }
-    .chat-bubble .user-bubble strong {
-        color: #1A73E8;
-    }
-    .stButton>button {
-        background-color: #1A73E8;
-        color: white;
-        padding: 10px;
-        border-radius: 5px;
-        font-size: 14px;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-    }
-    .stButton>button:hover {
-        background-color: #0F61B6;
-    }
-    @keyframes fadeIn {
-        from {opacity: 0;}
-        to {opacity: 1;}
-    }
-    </style>
-""", unsafe_allow_html=True)
+        elif st.session_state.step == 'done':
+            chat_bubble("Application complete! Thank you for using the ACP/Lifeline Assistant!", sender='bot')
