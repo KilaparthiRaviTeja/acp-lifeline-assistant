@@ -11,23 +11,29 @@ st.set_page_config(page_title="ACP/Lifeline Assistant", layout="wide")
 
 # --- Style ---
 st.markdown("""
+ st.markdown(
+    """
     <style>
-      /* Pin the main title at top */
+      /* Pin the main title at top, black background + white text */
       h1 {
         position: fixed;
-        top: 0;
-        width: 100%;
-        background-color: white;
+        top: 0; left: 0; right: 0;
+        background-color: black !important;
+        color: white !important;
         z-index: 1000;
         margin: 0;
         padding: 0.75rem 1rem;
-        border-bottom: 1px solid #ddd;
+        border-bottom: 1px solid #444;
       }
       /* Push content below the fixed header */
       .block-container {
         padding-top: 3.5rem;
       }
     </style>
+    """,
+    unsafe_allow_html=True
+)
+
     <style>
     body { background-color: white !important; color: black; }
     .chat-bubble {
