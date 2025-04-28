@@ -11,8 +11,6 @@ st.set_page_config(page_title="ACP/Lifeline Assistant", layout="wide")
 
 # --- Style ---
 st.markdown("""
- st.markdown(
-    """
     <style>
       /* Pin the main title at top, black background + white text */
       h1 {
