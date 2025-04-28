@@ -97,13 +97,32 @@ def save_user_data():
 
 # Reset everything
 def reset_chat():
-    for key in ['step', 'progress', 'user_id', 'photos', 'reminder_sent', 'awaiting_reset_confirm', 'reset_response', 'chat_history']:
-        if key in st.session_state:
-            del st.session_state[key]
-    st.experimental_rerun()
+    st.session_state.step = 'start'
+    st.session_state.progress = 0
+    st.session_state.user_id = None
+    st.session_state.photos = []
+    st.session_state.reminder_sent = False
+    st.session_state.awaiting_reset_confirm = False
+    st.session_state.reset_response = None
+    st.session_state.chat_history = []
 
 # Sidebar reset
 with st.sidebar:
+    st.header("FAQ")
+    st.write("""
+    **Q: How do I use this onboarding bot?**
+    - Follow the steps provided by the bot to upload your ID and photo.
+    
+    **Q: Can I reset my progress?**
+    - Yes, you can reset the process at any time by clicking on the "Reset Chat" button.
+
+    **Q: What happens after I submit my ID and photo?**
+    - After uploading your ID and photo, you'll be asked to confirm your submission.
+
+    **Q: Is my data safe?**
+    - Yes, your data is kept confidential and only used for the onboarding process.
+    """)
+
     if st.button("🔄 Reset Chat"):
         chat_bubble("⚠️ Are you sure you want to reset and lose progress? (yes/no)", sender='bot')
         st.session_state.awaiting_reset_confirm = True
@@ -199,23 +218,48 @@ else:
 st.markdown("""
     <style>
     .chat-bubble {
-        max-width: 70%;
-        padding: 10px 15px;
-        margin: 8px;
-        border-radius: 20px;
+        max-width: 75%;
+        padding: 12px 18px;
+        margin: 10px;
+        border-radius: 18px;
         font-size: 16px;
-        line-height: 1.5;
-        animation: fadeIn 0.5s ease;
+        line-height: 1.6;
+        animation: fadeIn 0.6s ease;
+        box-shadow: 0px 2px 5px rgba(0,0,0,0.1);
+        font-family: 'Arial', sans-serif;
     }
     .user-bubble {
         background-color: #DCF8C6;
         margin-left: auto;
         text-align: right;
+        border-top-left-radius: 0;
     }
     .bot-bubble {
         background-color: #F1F0F0;
         margin-right: auto;
         text-align: left;
+        border-top-right-radius: 0;
+    }
+    .chat-bubble strong {
+        font-size: 14px;
+        color: #5A5A5A;
+    }
+    .chat-bubble .bot-bubble strong {
+        color: #333;
+    }
+    .chat-bubble .user-bubble strong {
+        color: #1A73E8;
+    }
+    .stButton>button {
+        background-color: #1A73E8;
+        color: white;
+        padding: 10px;
+        border-radius: 5px;
+        font-size: 14px;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+    .stButton>button:hover {
+        background-color: #0F61B6;
     }
     @keyframes fadeIn {
         from {opacity: 0;}
