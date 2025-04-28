@@ -300,3 +300,6 @@ if st.session_state.step in ['awaiting_confirmation', 'awaiting_provider_switch'
         if submitted and user_input:
             chat_bubble(user_input, sender='user')
             bot_reply(user_input)
+            
+if st.session_state.step == 'done':
+    chat_bubble("🙏 Thank you for using the assistant. Have a great day!", sender='bot')
