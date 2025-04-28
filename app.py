@@ -47,51 +47,62 @@ if 'step' not in st.session_state:
         'chat_history': [],
         'progress': 0,
         'awaiting_reset_confirm': False,
-        'reminder_sent': False,
-        'reset_confirm': False,
+        'reminder_sent': False
     })
 
-# --- Existing Records (simulate database) ---
-existing_records = [
-    {"id": "123-45-6789", "photo_hash": "abcd1234"},
-    {"id": "555-66-7777", "photo_hash": "efgh5678"},
-]
-
-# --- FAQ System ---
-faq = {
-    "How do I apply for ACP or Lifeline?": "You can apply by providing your ID, uploading a photo, and confirming your details.",
-    "What documents are needed for verification?": "We need either your SSN or Tribal ID, along with a recent photo.",
-    "What happens after I submit my application?": "Your details are sent to NLAD for verification. Most applications are processed in 1–2 business days."
-}
-
-# --- Sidebar Content ---
+# --- Sidebar ---
 with st.sidebar:
-    st.title("Welcome to our ACP/Lifeline assistant.\nNeed help? Chat below!")
-    if st.button("🔄 Reset Chat"):
-        st.session_state.reset_confirm = True
+    st.title("Welcome to our ACP/Lifeline Assistant.\nNeed help? Chat below!")
 
-    if st.session_state.reset_confirm:
-        st.warning("⚠️ Are you sure you want to reset and lose progress?")
+    if st.button("🔄 Reset Chat"):
+        st.session_state.awaiting_reset_confirm = True
+
+    if st.session_state.awaiting_reset_confirm:
+        st.warning("⚠️ Are you sure you want to reset and lose your progress?")
         col1, col2 = st.columns(2)
         with col1:
             if st.button("✅ Yes, Reset"):
-                st.session_state.clear()
-                st.rerun()
+                def reset_session():
+                    with st.spinner('Resetting chat...'):
+                        time.sleep(1)
+                    st.session_state.clear()
+                    st.session_state.update({
+                        'step': 'start',
+                        'user_type': None,
+                        'id_type': None,
+                        'user_id': None,
+                        'photos': [],
+                        'application_type': None,
+                        'confirmed': False,
+                        'duplicate': False,
+                        'chat_history': [],
+                        'progress': 0,
+                        'awaiting_reset_confirm': False,
+                        'reminder_sent': False
+                    })
+                    st.rerun()
+                reset_session()
         with col2:
             if st.button("❌ No, Cancel"):
-                st.session_state.reset_confirm = False
+                st.session_state.awaiting_reset_confirm = False
 
+    # FAQ
     st.header("FAQ")
+    faq = {
+        "How do I apply for ACP or Lifeline?": "You can apply by providing your ID, uploading a photo, and confirming your details.",
+        "What documents are needed for verification?": "We need either your SSN or Tribal ID, along with a recent photo.",
+        "What happens after I submit my application?": "Your details are sent to NLAD for verification. Most applications are processed in 1–2 business days."
+    }
     for question, answer in faq.items():
         if st.button(question):
             st.info(answer)
 
-# --- Chat Bubble Function ---
+# --- Chat Bubble ---
 def chat_bubble(message, sender='bot', save_to_history=True):
     avatar = "🤖" if sender == 'bot' else "🧑"
     bubble_class = 'bot-bubble' if sender == 'bot' else 'user-bubble'
     if sender == 'bot':
-        time.sleep(0.5)  # Typing delay for bot
+        time.sleep(0.5)
     st.markdown(
         f"""
         <div class="chat-bubble {bubble_class} clearfix">
@@ -107,7 +118,7 @@ def chat_bubble(message, sender='bot', save_to_history=True):
 for msg in st.session_state.chat_history:
     chat_bubble(msg['text'], sender=msg['sender'], save_to_history=False)
 
-# --- Helper Functions ---
+# --- Helpers ---
 def validate_id(user_input):
     if st.session_state.id_type == 'ssn':
         return bool(re.match(r"^\d{3}-\d{2}-\d{4}$", user_input))
@@ -120,55 +131,17 @@ def get_image_hash(uploaded_file):
     return str(imagehash.average_hash(image))
 
 def check_duplicate(user_id, photo_hashes):
+    existing_records = [
+        {"id": "123-45-6789", "photo_hash": "abcd1234"},
+        {"id": "555-66-7777", "photo_hash": "efgh5678"},
+    ]
     for record in existing_records:
         if record['id'] == user_id or record['photo_hash'] in photo_hashes:
             return True
     return False
 
 def save_user_data():
-    for photo in st.session_state.photos:
-        existing_records.append({
-            "id": st.session_state.user_id,
-            "photo_hash": photo['hash']
-        })
-
-def bot_reply(user_input):
-    step = st.session_state.step
-
-    if step == 'awaiting_id':
-        if validate_id(user_input):
-            st.session_state.user_id = user_input
-            st.session_state.step = 'awaiting_photo'
-            st.session_state.progress = 60
-            chat_bubble("✅ ID confirmed. Now please upload your photo(s) for verification.", sender='bot')
-            chat_bubble("📈 Progress: 60% complete!", sender='bot')
-        else:
-            chat_bubble("⚠️ Please enter a valid SSN (123-45-6789) or Tribal ID (at least 5 digits).", sender='bot')
-
-    elif step == 'awaiting_confirmation':
-        if user_input.strip().lower() == 'yes':
-            save_user_data()
-            st.session_state.confirmed = True
-            st.session_state.step = 'done'
-            chat_bubble("✅ Details sent to NLAD.", sender='bot')
-            chat_bubble("📅 Most applications are processed in 1–2 business days.", sender='bot')
-        elif user_input.strip().lower() == 'no':
-            chat_bubble("Okay! Let me know when you're ready.", sender='bot')
-        else:
-            chat_bubble("⚠️ Please respond with 'yes' or 'no'.", sender='bot')
-
-    elif step == 'awaiting_provider_switch':
-        if user_input.strip().lower() == 'yes':
-            st.session_state.step = 'done'
-            chat_bubble("Thanks! We'll help you switch your provider soon.", sender='bot')
-        elif user_input.strip().lower() == 'no':
-            st.session_state.step = 'done'
-            chat_bubble("Okay, your current provider will remain active.", sender='bot')
-        else:
-            chat_bubble("⚠️ Please respond with 'yes' or 'no'.", sender='bot')
-
-    elif step == 'done':
-        chat_bubble("🙏 Thank you for using the assistant. Have a great day!", sender='bot')
+    pass  # You can add logic to save to your database
 
 def update_progress_bar():
     target_progress = {
@@ -190,14 +163,53 @@ def update_progress_bar():
         progress_bar.progress(current_progress)
         time.sleep(0.02)
 
-# --- Main Chat Logic ---
-st.title("ACP/Lifeline Assistant")
+def send_reminder():
+    if st.session_state.step in ['awaiting_id', 'awaiting_photo'] and not st.session_state.reminder_sent:
+        st.session_state.reminder_sent = True
+        chat_bubble("⚠️ You haven't completed the process. Would you like to continue? (yes/no)", sender='bot')
+
+def bot_reply(user_input):
+    step = st.session_state.step
+
+    if step == 'awaiting_id':
+        if validate_id(user_input):
+            st.session_state.user_id = user_input
+            st.session_state.step = 'awaiting_photo'
+            chat_bubble("✅ ID confirmed. Now please upload your photo(s) for verification.", sender='bot')
+            update_progress_bar()
+            st.rerun()  # <-- THIS forces Streamlit to immediately refresh the page based on new step
+        else:
+            chat_bubble("⚠️ Invalid ID format.", sender='bot')
+
+    elif step == 'awaiting_confirmation':
+        if user_input.strip().lower() == 'yes':
+            save_user_data()
+            st.session_state.confirmed = True
+            st.session_state.step = 'done'
+            chat_bubble("✅ Details submitted to NLAD.", sender='bot')
+        elif user_input.strip().lower() == 'no':
+            chat_bubble("Okay, let us know when you're ready!", sender='bot')
+        else:
+            chat_bubble("⚠️ Please select 'yes' or 'no'.", sender='bot')
+
+    elif step == 'awaiting_provider_switch':
+        if user_input.strip().lower() == 'yes':
+            st.session_state.step = 'done'
+            chat_bubble("✅ We'll assist with switching providers.", sender='bot')
+        elif user_input.strip().lower() == 'no':
+            st.session_state.step = 'done'
+            chat_bubble("Okay, your current provider remains active.", sender='bot')
+        else:
+            chat_bubble("⚠️ Please select 'yes' or 'no'.", sender='bot')
+
+
+# --- Main Chat Area ---
+send_reminder()
 
 if st.session_state.step == 'start':
     if 'welcome_shown' not in st.session_state:
         st.session_state.welcome_shown = True
-        chat_bubble("Hi there! 👋 I’m here to help you apply for ACP or Lifeline.", sender='bot')
-        chat_bubble("Are you a new user or an existing user?", sender='bot')
+        chat_bubble("👋 Hi! Are you a new or existing user?", sender='bot')
 
     col1, col2 = st.columns(2)
     if col1.button("🆕 New"):
@@ -218,7 +230,7 @@ if st.session_state.step == 'ask_id_type':
         st.session_state.id_type = 'ssn'
         st.session_state.step = 'awaiting_id'
         chat_bubble("SSN selected.", sender='user')
-        chat_bubble("Please enter your SSN (123-45-6789).", sender='bot')
+        chat_bubble("Please enter your SSN (format: 123-45-6789).", sender='bot')
 
     if col2.button("Tribal ID"):
         st.session_state.id_type = 'tribal'
@@ -233,7 +245,6 @@ if st.session_state.step == 'awaiting_id':
         if submitted and user_input:
             chat_bubble(user_input, sender='user')
             bot_reply(user_input)
-            update_progress_bar()
 
 if st.session_state.step == 'awaiting_photo':
     uploaded_files = st.file_uploader("Upload your photo(s) (jpg/png, max 5MB each)", type=["jpg", "jpeg", "png"], accept_multiple_files=True)
@@ -241,26 +252,19 @@ if st.session_state.step == 'awaiting_photo':
         valid_files = []
         for uploaded_file in uploaded_files:
             if uploaded_file.size > 5 * 1024 * 1024:
-                chat_bubble(f"⚠️ {uploaded_file.name} is too large (>5MB). Please upload a smaller file.", sender='bot')
+                chat_bubble(f"⚠️ {uploaded_file.name} is too large (>5MB).", sender='bot')
             else:
                 valid_files.append(uploaded_file)
 
         if valid_files:
-            for file in valid_files:
-                file_hash = get_image_hash(file)
-                st.session_state.photos.append({"file": file, "hash": file_hash})
-                chat_bubble(f"📸 Uploaded: {file.name}", sender='bot')
-                st.image(BytesIO(file.getvalue()), caption=file.name, use_column_width=True)
-
             photo_hashes = [get_image_hash(file) for file in valid_files]
             if check_duplicate(st.session_state.user_id, photo_hashes):
                 st.session_state.duplicate = True
                 st.session_state.step = 'awaiting_provider_switch'
-                chat_bubble("⚠️ Duplicate detected! It looks like you're already registered.", sender='bot')
-                chat_bubble("Would you like to switch providers instead? (yes/no)", sender='bot')
+                chat_bubble("⚠️ Duplicate detected. Switch provider? (yes/no)", sender='bot')
             else:
                 st.session_state.step = 'awaiting_confirmation'
-                chat_bubble("✅ No duplicate found. Do you want to submit your details to NLAD? (yes/no)", sender='bot')
+                chat_bubble("✅ No duplicate found. Submit to NLAD? (yes/no)", sender='bot')
 
 if st.session_state.step in ['awaiting_confirmation', 'awaiting_provider_switch']:
     with st.form("confirm_form", clear_on_submit=True):
@@ -269,4 +273,6 @@ if st.session_state.step in ['awaiting_confirmation', 'awaiting_provider_switch'
         if submitted and user_input:
             chat_bubble(user_input, sender='user')
             bot_reply(user_input)
-            update_progress_bar()
+
+if st.session_state.step == 'done':
+    chat_bubble("🙏 Thank you for using the assistant. Have a great day!", sender='bot')
