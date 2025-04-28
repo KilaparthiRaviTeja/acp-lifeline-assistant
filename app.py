@@ -248,8 +248,8 @@ if st.session_state.step == 'awaiting_id':
 
 if st.session_state.step == 'awaiting_photo':
     uploaded_files = st.file_uploader(
-        "Upload your photo(s) (jpg/png, max 5MB each)",
-        type=["jpg", "jpeg", "png"],
+        "Upload your photo(s) (jpg/png/jfif, max 5MB each)",
+        type=["jpg", "jpeg", "png", "jfif"],
         accept_multiple_files=True
     )
     if uploaded_files:
