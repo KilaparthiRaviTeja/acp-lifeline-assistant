@@ -133,8 +133,8 @@ def get_image_hash(uploaded_file):
 
 def check_duplicate(user_id, photo_hashes):
     existing_records = [
-        {"id": "123-45-6789", "photo_hash": "abcd1234"},
-        {"id": "555-66-7777", "photo_hash": "efgh5678"},
+        {"id": "123-456-789", "photo_hash": "abcd1234"},
+        {"id": "555-666-777", "photo_hash": "efgh5678"},
     ]
     for record in existing_records:
         if record['id'] == user_id or record['photo_hash'] in photo_hashes:
