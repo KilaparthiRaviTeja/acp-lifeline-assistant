@@ -306,13 +306,22 @@ if st.session_state.step == 'awaiting_confirmation':
         update_progress_bar()
         st.rerun()
 
-if st.session_state.step in ['awaiting_confirmation', 'awaiting_provider_switch']:
-    with st.form("confirm_form", clear_on_submit=True):
-        user_input = st.text_input("Your response:")
-        submitted = st.form_submit_button("➤")
-        if submitted and user_input:
-            chat_bubble(user_input, sender='user')
-            bot_reply(user_input)
+# Provider-switch confirmation via buttons (no text box)
+if st.session_state.step == 'awaiting_provider_switch':
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("✅ Yes, switch provider"):
+            chat_bubble("Yes, switch provider.", sender='user')
+            bot_reply("yes")
+            update_progress_bar()
+            st.rerun()
+    with col2:
+        if st.button("❌ No, keep current"):
+            chat_bubble("No, keep current provider.", sender='user')
+            bot_reply("no")
+            update_progress_bar()
+            st.rerun()
+
             
 if st.session_state.step == 'done':
     chat_bubble("🙏 Thank you for using the assistant. Have a great day!", sender='bot')
