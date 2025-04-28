@@ -96,8 +96,6 @@ def chat_bubble(message, sender='bot', save_to_history=True):
 for msg in st.session_state.chat_history:
     chat_bubble(msg['text'], sender=msg['sender'], save_to_history=False)
 
-# --- Progress Bar ---
-st.progress(st.session_state.progress)
 
 # --- Helpers ---
 def validate_id(user_input):
