@@ -230,7 +230,7 @@ if st.session_state.step == 'ask_id_type':
         st.session_state.id_type = 'ssn'
         st.session_state.step = 'awaiting_id'
         chat_bubble("SSN selected.", sender='user')
-        chat_bubble("Please enter your SSN (format: 123-45-6789).", sender='bot')
+        chat_bubble("Please enter your SSN (format: 123-456-789).", sender='bot')
 
     if col2.button("Tribal ID"):
         st.session_state.id_type = 'tribal'
