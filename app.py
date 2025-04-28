@@ -246,8 +246,18 @@ if st.session_state.step == 'awaiting_id':
             chat_bubble(user_input, sender='user')
             bot_reply(user_input)
 
+# … your existing imports, config, chat_bubble, helpers, etc. …
+
+# —————————————
+# 1) Photo Upload + Preview
+# —————————————
 if st.session_state.step == 'awaiting_photo':
-    uploaded_files = st.file_uploader("Upload your photo(s) (jpg/png, max 5MB each)", type=["jpg", "jpeg", "png"], accept_multiple_files=True)
+    uploaded_files = st.file_uploader(
+        "Upload your photo(s) (jpg/png, max 5MB each)", 
+        type=["jpg", "jpeg", "png"], 
+        accept_multiple_files=True
+    )
+
     if uploaded_files:
         valid_files = []
         for uploaded_file in uploaded_files:
@@ -257,22 +267,47 @@ if st.session_state.step == 'awaiting_photo':
                 valid_files.append(uploaded_file)
 
         if valid_files:
-            photo_hashes = [get_image_hash(file) for file in valid_files]
+            # store & preview each image
+            for file in valid_files:
+                file_hash = get_image_hash(file)
+                st.session_state.photos.append({"file": file, "hash": file_hash})
+                chat_bubble(f"📸 Uploaded: {file.name}", sender='bot')
+                st.image(file, caption="Preview", width=200)
+
+            # now move on
+            photo_hashes = [p['hash'] for p in st.session_state.photos]
             if check_duplicate(st.session_state.user_id, photo_hashes):
                 st.session_state.duplicate = True
                 st.session_state.step = 'awaiting_provider_switch'
-                chat_bubble("⚠️ Duplicate detected. Switch provider? (yes/no)", sender='bot')
+                chat_bubble("⚠️ Duplicate detected. Switch provider?", sender='bot')
             else:
                 st.session_state.step = 'awaiting_confirmation'
-                chat_bubble("✅ No duplicate found. Submit to NLAD? (yes/no)", sender='bot')
+                chat_bubble("✅ No duplicate found. Submit to NLAD?", sender='bot')
 
+            update_progress_bar()
+            st.rerun()   # ← redraw without the uploader
+
+# ——————————————————————
+# 2) Confirmation via Buttons
+# ——————————————————————
 if st.session_state.step in ['awaiting_confirmation', 'awaiting_provider_switch']:
-    with st.form("confirm_form", clear_on_submit=True):
-        user_input = st.text_input("Your response:")
-        submitted = st.form_submit_button("➤")
-        if submitted and user_input:
-            chat_bubble(user_input, sender='user')
-            bot_reply(user_input)
+    # two big buttons instead of a text input
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("✅ Yes"):
+            chat_bubble("Yes", sender='user')
+            bot_reply("yes")
+            update_progress_bar()
+            st.rerun()   # ← redraw without these buttons
+    with col2:
+        if st.button("❌ No"):
+            chat_bubble("No", sender='user')
+            bot_reply("no")
+            update_progress_bar()
+            st.rerun()
 
+# —————————————
+# 3) Final Message
+# —————————————
 if st.session_state.step == 'done':
     chat_bubble("🙏 Thank you for using the assistant. Have a great day!", sender='bot')
