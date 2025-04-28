@@ -277,8 +277,19 @@ if st.session_state.step == 'awaiting_photo':
                 chat_bubble("⚠️ Duplicate detected. Switch provider? (yes/no)", sender='bot')
             else:
                 st.session_state.step = 'awaiting_confirmation'
-                chat_bubble("✅ No duplicate found. Submit to NLAD? (yes/no)", sender='bot')
-            update_progress_bar()
+                chat_bubble("✅ No duplicate found. Submit to NLAD?", sender='bot')
+
+if st.session_state.step == 'awaiting_confirmation':
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("✅ Yes"):
+            chat_bubble("Yes, submit to NLAD.", sender='user')
+            bot_reply("yes")
+        with col2:
+            if st.button("❌ No"):
+                chat_bubble("No, do not submit.", sender='user')
+                bot_reply("no")
+
             
 
 
