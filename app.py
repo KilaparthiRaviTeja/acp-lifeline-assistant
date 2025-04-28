@@ -281,18 +281,17 @@ if st.session_state.step == 'awaiting_photo':
 
 if st.session_state.step == 'awaiting_confirmation':
     col1, col2 = st.columns(2)
-    with col1:
-        if st.button("✅ Yes"):
-            chat_bubble("Yes, submit to NLAD.", sender='user')
-            bot_reply("yes")
-        with col2:
-            if st.button("❌ No"):
-                chat_bubble("No, do not submit.", sender='user')
-                bot_reply("no")
+    if col1.button("✅ Yes"):
+        chat_bubble("Yes, submit to NLAD.", sender='user')
+        bot_reply("yes")
+        update_progress_bar()
+        st.rerun()
 
-            
-
-
+    if col2.button("❌ No"):
+        chat_bubble("No, do not submit.", sender='user')
+        bot_reply("no")
+        update_progress_bar()
+        st.rerun()
 
 if st.session_state.step in ['awaiting_confirmation', 'awaiting_provider_switch']:
     with st.form("confirm_form", clear_on_submit=True):
