@@ -28,10 +28,6 @@ st.markdown("""
         padding-top: 3.5rem;
       }
     </style>
-    """,
-    unsafe_allow_html=True
-)
-
     <style>
     body { background-color: white !important; color: black; }
     .chat-bubble {
@@ -56,6 +52,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 st.title("ACP/Lifeline Assistant")
+
 # --- Initialize Session State ---
 if 'step' not in st.session_state:
     st.session_state.update({
@@ -335,6 +332,6 @@ if st.session_state.step in ['awaiting_confirmation', 'awaiting_provider_switch'
         if submitted and user_input:
             chat_bubble(user_input, sender='user')
             bot_reply(user_input)
-            
+
 if st.session_state.step == 'done':
     chat_bubble("🙏 Thank you for using the assistant. Have a great day!", sender='bot')
