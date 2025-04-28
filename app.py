@@ -76,7 +76,7 @@ with st.sidebar:
         with col1:
             if st.button("✅ Yes, Reset"):
                 st.session_state.clear()
-                st.experimental_rerun()
+                st.rerun()
         with col2:
             if st.button("❌ No, Cancel"):
                 st.session_state.reset_confirm = False
