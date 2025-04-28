@@ -51,6 +51,7 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
+st.title("ACP/Lifeline Assistant")
 # --- Initialize Session State ---
 if 'step' not in st.session_state:
     st.session_state.update({
@@ -219,6 +220,7 @@ def bot_reply(user_input):
         else:
             chat_bubble("⚠️ Please select 'yes' or 'no'.", sender='bot')
 
+
 # --- Main Chat Area ---
 send_reminder()
 
@@ -307,6 +309,7 @@ if st.session_state.step == 'awaiting_photo':
             update_progress_bar()
             st.rerun()
 
+
 if st.session_state.step == 'awaiting_confirmation':
     col1, col2 = st.columns(2)
     if col1.button("✅ Yes"):
@@ -328,6 +331,6 @@ if st.session_state.step in ['awaiting_confirmation', 'awaiting_provider_switch'
         if submitted and user_input:
             chat_bubble(user_input, sender='user')
             bot_reply(user_input)
-
+            
 if st.session_state.step == 'done':
     chat_bubble("🙏 Thank you for using the assistant. Have a great day!", sender='bot')
