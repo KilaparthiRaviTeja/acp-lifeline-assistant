@@ -12,6 +12,23 @@ st.set_page_config(page_title="ACP/Lifeline Assistant", layout="wide")
 # --- Style ---
 st.markdown("""
     <style>
+      /* Pin the main title at top */
+      h1 {
+        position: fixed;
+        top: 0;
+        width: 100%;
+        background-color: white;
+        z-index: 1000;
+        margin: 0;
+        padding: 0.75rem 1rem;
+        border-bottom: 1px solid #ddd;
+      }
+      /* Push content below the fixed header */
+      .block-container {
+        padding-top: 3.5rem;
+      }
+    </style>
+    <style>
     body { background-color: white !important; color: black; }
     .chat-bubble {
         padding: 12px 16px; border-radius: 16px; margin: 8px 0;
@@ -33,7 +50,7 @@ st.markdown("""
     }
     </style>
 """, unsafe_allow_html=True)
-
+st.title("ACP/Lifeline Assistant")
 # --- Initialize Session State ---
 if 'step' not in st.session_state:
     st.session_state.update({
