@@ -133,8 +133,8 @@ def get_image_hash(uploaded_file):
 
 def check_duplicate(user_id, photo_hashes):
     existing_records = [
-        {"id": "123-456-789", "photo_hash": "abcd1234"},
-        {"id": "555-666-777", "photo_hash": "efgh5678"},
+        {"id": "123-45-6789", "photo_hash": "abcd1234"},
+        {"id": "555-66-6777", "photo_hash": "efgh5678"},
     ]
     for record in existing_records:
         if record['id'] == user_id or record['photo_hash'] in photo_hashes:
@@ -230,7 +230,7 @@ if st.session_state.step == 'ask_id_type':
         st.session_state.id_type = 'ssn'
         st.session_state.step = 'awaiting_id'
         chat_bubble("SSN selected.", sender='user')
-        chat_bubble("Please enter your SSN (format: 123-456-789).", sender='bot')
+        chat_bubble("Please enter your SSN (format: 123-45-6789).", sender='bot')
 
     if col2.button("Tribal ID"):
         st.session_state.id_type = 'tribal'
