@@ -12,23 +12,6 @@ st.set_page_config(page_title="ACP/Lifeline Assistant", layout="wide")
 # --- Style ---
 st.markdown("""
     <style>
-      /* Pin the main title at top, black background + white text */
-      h1 {
-        position: fixed;
-        top: 0; left: 0; right: 0;
-        background-color: black !important;
-        color: white !important;
-        z-index: 1000;
-        margin: 0;
-        padding: 0.75rem 1rem;
-        border-bottom: 1px solid #444;
-      }
-      /* Push content below the fixed header */
-      .block-container {
-        padding-top: 3.5rem;
-      }
-    </style>
-    <style>
     body { background-color: white !important; color: black; }
     .chat-bubble {
         padding: 12px 16px; border-radius: 16px; margin: 8px 0;
@@ -50,8 +33,6 @@ st.markdown("""
     }
     </style>
 """, unsafe_allow_html=True)
-
-st.title("ACP/Lifeline Assistant")
 
 # --- Initialize Session State ---
 if 'step' not in st.session_state:
@@ -332,6 +313,6 @@ if st.session_state.step in ['awaiting_confirmation', 'awaiting_provider_switch'
         if submitted and user_input:
             chat_bubble(user_input, sender='user')
             bot_reply(user_input)
-
+            
 if st.session_state.step == 'done':
     chat_bubble("🙏 Thank you for using the assistant. Have a great day!", sender='bot')
