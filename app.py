@@ -119,8 +119,9 @@ def save_user_data():
     for photo in st.session_state.photos:
         existing_records.append({
             "id": st.session_state.user_id,
-            "photo_hash": get_image_hash(photo)
+            "photo_hash": photo['hash']
         })
+
 
 def reset_session():
     st.session_state.clear()
@@ -183,28 +184,36 @@ def bot_reply(user_input):
 
 # --- Progress Update Enhancements ---
 def update_progress_bar():
-    if st.session_state.step == 'start':
-        st.session_state.progress = 0
-    elif st.session_state.step == 'awaiting_id':
-        st.session_state.progress = 20
-    elif st.session_state.step == 'awaiting_photo':
-        st.session_state.progress = 50
-    elif st.session_state.step == 'awaiting_confirmation':
-        st.session_state.progress = 80
-    elif st.session_state.step == 'done':
-        st.session_state.progress = 100
-    st.progress(st.session_state.progress)
+    target_progress = {
+        'start': 0,
+        'awaiting_id': 20,
+        'awaiting_photo': 50,
+        'awaiting_confirmation': 80,
+        'done': 100
+    }.get(st.session_state.step, st.session_state.progress)
+
+    current_progress = st.session_state.progress
+    st.session_state.progress = target_progress  # Update session state
+
+    progress_bar = st.empty()
+    while current_progress < target_progress:
+        current_progress += 2
+        if current_progress > target_progress:
+            current_progress = target_progress
+        progress_bar.progress(current_progress)
+        time.sleep(0.02)
 
 # --- Automatic Reminder System ---
 def send_reminder():
-    if st.session_state.step in ['awaiting_id', 'awaiting_photo'] and 'reminder_sent' not in st.session_state:
+    if st.session_state.step in ['awaiting_id', 'awaiting_photo'] and not st.session_state.reminder_sent:
         st.session_state.reminder_sent = True
         chat_bubble("⚠️ You haven't completed the process. Would you like to continue? (yes/no)", sender='bot')
 
-# --- Reset Chat Button ---
-if st.button("🔄 Reset Chat"):
-    chat_bubble("⚠️ Are you sure you want to reset and lose progress? (yes/no)", sender='bot')
-    st.session_state.awaiting_reset_confirm = True
+with st.sidebar:
+    if st.button("🔄 Reset Chat"):
+        chat_bubble("⚠️ Are you sure you want to reset and lose progress? (yes/no)", sender='bot')
+        st.session_state.awaiting_reset_confirm = True
+
 
 # --- Display FAQ on Sidebar ---
 show_faq()
@@ -267,9 +276,11 @@ if st.session_state.step == 'awaiting_photo':
 
         if valid_files:
             for file in valid_files:
-                st.session_state.photos.append(file)
+                file_hash = get_image_hash(file)
+                st.session_state.photos.append({"file": file, "hash": file_hash})
                 chat_bubble(f"📸 Uploaded: {file.name}", sender='bot')
                 st.image(BytesIO(file.getvalue()), caption=file.name, use_column_width=True)
+
 
             photo_hashes = [get_image_hash(file) for file in valid_files]
             if check_duplicate(st.session_state.user_id, photo_hashes):
