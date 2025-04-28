@@ -166,7 +166,6 @@ def update_progress_bar():
 def send_reminder():
     if st.session_state.step in ['awaiting_id', 'awaiting_photo'] and not st.session_state.reminder_sent:
         st.session_state.reminder_sent = True
-        chat_bubble("⚠️ You haven't completed the process. Would you like to continue? (yes/no)", sender='bot')
 
 def bot_reply(user_input):
     step = st.session_state.step
