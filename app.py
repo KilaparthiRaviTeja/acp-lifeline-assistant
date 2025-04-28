@@ -175,8 +175,9 @@ def bot_reply(user_input):
         if validate_id(user_input):
             st.session_state.user_id = user_input
             st.session_state.step = 'awaiting_photo'
-            chat_bubble("✅ ID confirmed. Now upload your photo(s) for verification.", sender='bot')
+            chat_bubble("✅ ID confirmed. Now please upload your photo(s) for verification.", sender='bot')
             update_progress_bar()
+            st.rerun()  # <-- THIS forces Streamlit to immediately refresh the page based on new step
         else:
             chat_bubble("⚠️ Invalid ID format.", sender='bot')
 
@@ -200,6 +201,7 @@ def bot_reply(user_input):
             chat_bubble("Okay, your current provider remains active.", sender='bot')
         else:
             chat_bubble("⚠️ Please select 'yes' or 'no'.", sender='bot')
+
 
 # --- Main Chat Area ---
 send_reminder()
@@ -255,6 +257,12 @@ if st.session_state.step == 'awaiting_photo':
                 valid_files.append(uploaded_file)
 
         if valid_files:
+            # Display photo preview
+            for uploaded_file in valid_files:
+                image = Image.open(uploaded_file)
+                st.image(image, caption=f"Preview: {uploaded_file.name}", use_column_width=True)
+
+            # Check for duplicates
             photo_hashes = [get_image_hash(file) for file in valid_files]
             if check_duplicate(st.session_state.user_id, photo_hashes):
                 st.session_state.duplicate = True
@@ -263,6 +271,7 @@ if st.session_state.step == 'awaiting_photo':
             else:
                 st.session_state.step = 'awaiting_confirmation'
                 chat_bubble("✅ No duplicate found. Submit to NLAD? (yes/no)", sender='bot')
+
 
 if st.session_state.step in ['awaiting_confirmation', 'awaiting_provider_switch']:
     with st.form("confirm_form", clear_on_submit=True):
