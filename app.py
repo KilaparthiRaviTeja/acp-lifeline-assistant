@@ -50,6 +50,8 @@ if 'reminder_sent' not in st.session_state:
     st.session_state.reminder_sent = False
 if 'awaiting_reset_confirm' not in st.session_state:
     st.session_state.awaiting_reset_confirm = False
+if 'reset_response' not in st.session_state:
+    st.session_state.reset_response = None
 if 'chat_history' not in st.session_state:
     st.session_state.chat_history = []
 
@@ -95,7 +97,7 @@ def save_user_data():
 
 # Reset everything
 def reset_chat():
-    for key in ['step', 'progress', 'user_id', 'photos', 'reminder_sent', 'awaiting_reset_confirm', 'chat_history']:
+    for key in ['step', 'progress', 'user_id', 'photos', 'reminder_sent', 'awaiting_reset_confirm', 'reset_response', 'chat_history']:
         if key in st.session_state:
             del st.session_state[key]
     st.experimental_rerun()
@@ -116,73 +118,82 @@ update_progress_bar()
 for chat in st.session_state.chat_history:
     chat_bubble(chat['text'], chat['sender'], save_to_history=False)
 
-# User text input
-user_input = st.text_input("You:", key='user_input')
+# Handle reset confirmation
+if st.session_state.awaiting_reset_confirm:
+    user_input = st.text_input("You:", key='user_input')
+    if user_input:
+        chat_bubble(user_input, sender='user')
 
-if user_input:
-    chat_bubble(user_input, sender='user')
-
-    if st.session_state.awaiting_reset_confirm:
         if user_input.lower() == 'yes':
             reset_chat()
         elif user_input.lower() == 'no':
             chat_bubble("✅ Reset cancelled. Let's continue!", sender='bot')
             st.session_state.awaiting_reset_confirm = False
+            st.session_state.reset_response = 'no'
+        else:
+            chat_bubble("❓ Please type 'yes' to confirm or 'no' to continue.", sender='bot')
 
-    elif st.session_state.step == 'start':
-        chat_bubble("👋 Welcome! Please enter your ID number.", sender='bot')
-        st.session_state.step = 'awaiting_id'
-        update_progress_bar()
+else:
+    # User text input
+    user_input = st.text_input("You:", key='user_input')
 
-    elif st.session_state.step == 'awaiting_id':
-        st.session_state.user_id = user_input.strip()
-        chat_bubble(f"📸 Great! Now upload a photo for ID verification.", sender='bot')
-        st.session_state.step = 'awaiting_photo'
-        update_progress_bar()
+    if user_input:
+        chat_bubble(user_input, sender='user')
 
-    elif st.session_state.step == 'awaiting_photo':
-        chat_bubble("📸 Please upload your photo using the uploader below.", sender='bot')
-
-    elif st.session_state.step == 'awaiting_confirmation':
-        if user_input.lower() == 'yes':
-            save_user_data()
-            chat_bubble("🎉 Your application has been submitted!", sender='bot')
-            st.session_state.step = 'done'
-            update_progress_bar()
-        elif user_input.lower() == 'no':
-            chat_bubble("🔄 Let's start over. Please enter your ID number.", sender='bot')
+        if st.session_state.step == 'start':
+            chat_bubble("👋 Welcome! Please enter your ID number.", sender='bot')
             st.session_state.step = 'awaiting_id'
             update_progress_bar()
-        else:
-            chat_bubble("❓ Please type 'yes' to confirm or 'no' to restart.", sender='bot')
 
-# Upload section (photo uploader)
-if st.session_state.step == 'awaiting_photo':
-    uploaded_file = st.file_uploader("Upload your photo here", type=['jpg', 'jpeg', 'png'])
-
-    if uploaded_file:
-        uploaded_hash = get_image_hash(uploaded_file)
-
-        duplicate = False
-        for record in existing_records:
-            if record['id'] == st.session_state.user_id or record['photo_hash'] == uploaded_hash:
-                duplicate = True
-                break
-
-        if duplicate:
-            chat_bubble("🚫 Duplicate detected! You've already submitted before.", sender='bot')
-        else:
-            st.session_state.photos.append(uploaded_file)
-
-            # Display mini thumbnail preview
-            st.image(uploaded_file, width=150, caption="Uploaded Photo Preview")
-
-            chat_bubble("✅ Photo uploaded successfully! Confirm submission? (yes/no)", sender='bot')
-            st.session_state.step = 'awaiting_confirmation'
+        elif st.session_state.step == 'awaiting_id':
+            st.session_state.user_id = user_input.strip()
+            chat_bubble(f"📸 Great! Now upload a photo for ID verification.", sender='bot')
+            st.session_state.step = 'awaiting_photo'
             update_progress_bar()
 
-# Reminder if user stuck
-send_reminder()
+        elif st.session_state.step == 'awaiting_photo':
+            chat_bubble("📸 Please upload your photo using the uploader below.", sender='bot')
+
+        elif st.session_state.step == 'awaiting_confirmation':
+            if user_input.lower() == 'yes':
+                save_user_data()
+                chat_bubble("🎉 Your application has been submitted!", sender='bot')
+                st.session_state.step = 'done'
+                update_progress_bar()
+            elif user_input.lower() == 'no':
+                chat_bubble("🔄 Let's start over. Please enter your ID number.", sender='bot')
+                st.session_state.step = 'awaiting_id'
+                update_progress_bar()
+            else:
+                chat_bubble("❓ Please type 'yes' to confirm or 'no' to restart.", sender='bot')
+
+    # Upload section (photo uploader)
+    if st.session_state.step == 'awaiting_photo':
+        uploaded_file = st.file_uploader("Upload your photo here", type=['jpg', 'jpeg', 'png'])
+
+        if uploaded_file:
+            uploaded_hash = get_image_hash(uploaded_file)
+
+            duplicate = False
+            for record in existing_records:
+                if record['id'] == st.session_state.user_id or record['photo_hash'] == uploaded_hash:
+                    duplicate = True
+                    break
+
+            if duplicate:
+                chat_bubble("🚫 Duplicate detected! You've already submitted before.", sender='bot')
+            else:
+                st.session_state.photos.append(uploaded_file)
+
+                # Display mini thumbnail preview
+                st.image(uploaded_file, width=150, caption="Uploaded Photo Preview")
+
+                chat_bubble("✅ Photo uploaded successfully! Confirm submission? (yes/no)", sender='bot')
+                st.session_state.step = 'awaiting_confirmation'
+                update_progress_bar()
+
+    # Reminder if user stuck
+    send_reminder()
 
 # CSS for chat bubbles & animations
 st.markdown("""
