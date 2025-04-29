@@ -4,7 +4,7 @@ import imagehash
 import time
 import json
 import requests
-from streamlit_lottie import st_lottie
+#from streamlit_lottie import st_lottie
 
 # --- Setup ---
 st.set_page_config(layout="centered")
