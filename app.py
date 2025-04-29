@@ -5,6 +5,7 @@ import time
 import imagehash
 import base64
 from PIL import Image
+import speech_recognition as sr
 
 # --- Page Config ---
 st.set_page_config(page_title="ACP/Lifeline Assistant", layout="wide")
@@ -118,6 +119,27 @@ def chat_bubble(message, sender='bot', save_to_history=True):
 # --- Replay Chat History ---
 for msg in st.session_state.chat_history:
     chat_bubble(msg['text'], sender=msg['sender'], save_to_history=False)
+
+# --- Speech-to-Text Helper ---
+def speech_to_text():
+    recognizer = sr.Recognizer()
+    microphone = sr.Microphone()
+
+    with microphone as source:
+        recognizer.adjust_for_ambient_noise(source)
+        st.write("🎤 Please speak now...")
+        audio = recognizer.listen(source)
+        
+    try:
+        text = recognizer.recognize_google(audio)
+        st.write(f"🎙️ You said: {text}")
+        return text
+    except sr.UnknownValueError:
+        st.error("Sorry, I could not understand that.")
+        return ""
+    except sr.RequestError:
+        st.error("Could not request results from Google Speech Recognition service.")
+        return ""
 
 # --- Helpers ---
 def validate_id(user_input):
@@ -272,56 +294,19 @@ if st.session_state.step == 'awaiting_photo':
                 img_html = (
                     f"📸 {file.name}<br>"
                     f"<img src='data:image/png;base64,{b64}' "
-                    f"style='max-width:200px;border-radius:8px;'/>"
+                    f"style='max-width:200px;border-radius: 8px;' />"
                 )
+                st.markdown(img_html, unsafe_allow_html=True)
 
-                # 3. Inject into the chat bubble as HTML
-                chat_bubble(img_html, sender='bot')
-
-            # 4. Move on to next step
-            photo_hashes = [p['hash'] for p in st.session_state.photos]
-            if check_duplicate(st.session_state.user_id, photo_hashes):
-                st.session_state.duplicate = True
-                st.session_state.step = 'awaiting_provider_switch'
-                chat_bubble("⚠️ Duplicate detected. Switch provider?", sender='bot')
-            else:
-                st.session_state.step = 'awaiting_confirmation'
-                chat_bubble("✅ No duplicate found. Submit to NLAD?", sender='bot')
-
-            update_progress_bar()
-            st.rerun()
-
+            st.session_state.step = 'awaiting_confirmation'
+            chat_bubble("Please confirm your details before submission.", sender='bot')
 
 if st.session_state.step == 'awaiting_confirmation':
-    col1, col2 = st.columns(2)
-    if col1.button("✅ Yes"):
-        chat_bubble("Yes, submit to NLAD.", sender='user')
-        bot_reply("yes")
-        update_progress_bar()
-        st.rerun()
+    user_input = st.text_input("Type 'yes' to confirm or 'no' to go back.")
+    if user_input.strip():
+        bot_reply(user_input)
 
-    if col2.button("❌ No"):
-        chat_bubble("No, do not submit.", sender='user')
-        bot_reply("no")
-        update_progress_bar()
-        st.rerun()
-
-# Provider-switch confirmation via buttons (no text box)
-if st.session_state.step == 'awaiting_provider_switch':
-    col1, col2 = st.columns(2)
-    with col1:
-        if st.button("✅ Yes, switch provider"):
-            chat_bubble("Yes, switch provider.", sender='user')
-            bot_reply("yes")
-            update_progress_bar()
-            st.rerun()
-    with col2:
-        if st.button("❌ No, keep current"):
-            chat_bubble("No, keep current provider.", sender='user')
-            bot_reply("no")
-            update_progress_bar()
-            st.rerun()
-
-            
 if st.session_state.step == 'done':
-    chat_bubble("🙏 Thank you for using the assistant. Have a great day!", sender='bot')
+    chat_bubble("🎉 Application completed. Thank you for submitting!", sender='bot')
+    st.session_state.progress = 100
+    st.experimental_rerun()
