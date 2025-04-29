@@ -110,8 +110,6 @@ def display_step_tracker(current_step):
     st.markdown('</div>', unsafe_allow_html=True)
 
 # --- Replay chat history on rerun ---
-for sender, message, avatar in st.session_state.chat_history:
-    chat_message(sender, message, avatar)
 
 # --- Chatbot Flow ---
 display_step_tracker(st.session_state.step)
