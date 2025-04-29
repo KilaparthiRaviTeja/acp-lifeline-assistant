@@ -39,6 +39,7 @@ if 'step' not in st.session_state:
     st.session_state.update({
         'step': 'start',
         'user_type': None,
+        'user_name': None,
         'id_type': None,
         'user_id': None,
         'photos': [],
@@ -70,6 +71,7 @@ with st.sidebar:
                     st.session_state.update({
                         'step': 'start',
                         'user_type': None,
+                        'user_name': None,
                         'id_type': None,
                         'user_id': None,
                         'photos': [],
@@ -147,8 +149,10 @@ def save_user_data():
 def update_progress_bar():
     target_progress = {
         'start': 0,
-        'awaiting_id': 20,
-        'awaiting_photo': 50,
+        'ask_name': 10,
+        'ask_id_type': 20,
+        'awaiting_id': 40,
+        'awaiting_photo': 60,
         'awaiting_confirmation': 80,
         'done': 100
     }.get(st.session_state.step, st.session_state.progress)
@@ -206,6 +210,7 @@ def bot_reply(user_input):
 # --- Main Chat Area ---
 send_reminder()
 
+# Step 1: Ask for Name after New/Existing User Selection
 if st.session_state.step == 'start':
     if 'welcome_shown' not in st.session_state:
         st.session_state.welcome_shown = True
@@ -214,114 +219,68 @@ if st.session_state.step == 'start':
     col1, col2 = st.columns(2)
     if col1.button("🆕 New"):
         st.session_state.user_type = 'new'
-        st.session_state.step = 'ask_id_type'
+        st.session_state.step = 'ask_name'
         chat_bubble("New user selected.", sender='user')
-        chat_bubble("What type of ID will you use?", sender='bot')
+        chat_bubble("What's your name?", sender='bot')
 
     if col2.button("👤 Existing"):
         st.session_state.user_type = 'existing'
-        st.session_state.step = 'ask_id_type'
+        st.session_state.step = 'ask_name'
         chat_bubble("Existing user selected.", sender='user')
-        chat_bubble("What type of ID will you use?", sender='bot')
+        chat_bubble("What's your name?", sender='bot')
 
+# Step 2: Capture and Save Name
+if st.session_state.step == 'ask_name':
+    with st.form("name_form", clear_on_submit=True):
+        name_input = st.text_input("Enter your name:")
+        submitted = st.form_submit_button("➤")
+        if submitted and name_input:
+            st.session_state.user_name = name_input  # Save user's name
+            chat_bubble(f"Nice to meet you, {name_input}!", sender='bot')
+            st.session_state.step = 'ask_id_type'  # Continue to ID type question
+            chat_bubble("What type of ID will you use?", sender='bot')
+
+# Step 3: Ask for ID Type
 if st.session_state.step == 'ask_id_type':
     col1, col2 = st.columns(2)
     if col1.button("SSN"):
         st.session_state.id_type = 'ssn'
         st.session_state.step = 'awaiting_id'
-        chat_bubble("SSN selected.", sender='user')
-        chat_bubble("Please enter your SSN (format: 123-45-6789).", sender='bot')
+        chat_bubble("You selected SSN. Please provide your SSN.", sender='bot')
 
     if col2.button("Tribal ID"):
         st.session_state.id_type = 'tribal'
         st.session_state.step = 'awaiting_id'
-        chat_bubble("Tribal ID selected.", sender='user')
-        chat_bubble("Please enter your Tribal ID (at least 5 digits).", sender='bot')
+        chat_bubble("You selected Tribal ID. Please provide your Tribal ID.", sender='bot')
 
+# Step 4: Capture and Verify ID
 if st.session_state.step == 'awaiting_id':
     with st.form("id_form", clear_on_submit=True):
-        user_input = st.text_input("Enter your ID:")
+        id_input = st.text_input("Enter your ID:")
         submitted = st.form_submit_button("➤")
-        if submitted and user_input:
-            chat_bubble(user_input, sender='user')
-            bot_reply(user_input)
+        if submitted and id_input:
+            bot_reply(id_input)
 
+# Step 5: Awaiting Photo Upload
 if st.session_state.step == 'awaiting_photo':
-    uploaded_files = st.file_uploader(
-        "Upload your photo(s) (jpg/png/jfif, max 5MB each)",
-        type=["jpg", "jpeg", "png", "jfif"],
-        accept_multiple_files=True
-    )
+    uploaded_files = st.file_uploader("Upload your photo(s)", accept_multiple_files=True, type=["jpg", "png", "jpeg"])
     if uploaded_files:
-        valid_files = []
+        photo_hashes = []
         for uploaded_file in uploaded_files:
-            if uploaded_file.size > 5 * 1024 * 1024:
-                chat_bubble(f"⚠️ {uploaded_file.name} is too large (>5MB).", sender='bot')
-            else:
-                valid_files.append(uploaded_file)
+            photo_hashes.append(get_image_hash(uploaded_file))
+        st.session_state.photos.extend(uploaded_files)
+        st.session_state.step = 'awaiting_confirmation'
+        chat_bubble("✅ Photo(s) uploaded. Please confirm your details.", sender='bot')
 
-        if valid_files:
-            for file in valid_files:
-                # 1. Compute and store hash
-                file_hash = get_image_hash(file)
-                st.session_state.photos.append({"file": file, "hash": file_hash})
-
-                # 2. Build Base64 data URI
-                file_bytes = file.getvalue()
-                b64 = base64.b64encode(file_bytes).decode()
-                img_html = (
-                    f"📸 {file.name}<br>"
-                    f"<img src='data:image/png;base64,{b64}' "
-                    f"style='max-width:200px;border-radius:8px;'/>"
-                )
-
-                # 3. Inject into the chat bubble as HTML
-                chat_bubble(img_html, sender='bot')
-
-            # 4. Move on to next step
-            photo_hashes = [p['hash'] for p in st.session_state.photos]
-            if check_duplicate(st.session_state.user_id, photo_hashes):
-                st.session_state.duplicate = True
-                st.session_state.step = 'awaiting_provider_switch'
-                chat_bubble("⚠️ Duplicate detected. Switch provider?", sender='bot')
-            else:
-                st.session_state.step = 'awaiting_confirmation'
-                chat_bubble("✅ No duplicate found. Submit to NLAD?", sender='bot')
-
-            update_progress_bar()
-            st.rerun()
-
-
+# Step 6: Confirmation
 if st.session_state.step == 'awaiting_confirmation':
-    col1, col2 = st.columns(2)
-    if col1.button("✅ Yes"):
-        chat_bubble("Yes, submit to NLAD.", sender='user')
-        bot_reply("yes")
-        update_progress_bar()
-        st.rerun()
+    with st.form("confirmation_form", clear_on_submit=True):
+        confirmation = st.radio("Is everything correct?", ("Yes", "No"))
+        submitted = st.form_submit_button("Confirm")
+        if submitted:
+            bot_reply(confirmation)
 
-    if col2.button("❌ No"):
-        chat_bubble("No, do not submit.", sender='user')
-        bot_reply("no")
-        update_progress_bar()
-        st.rerun()
-
-# Provider-switch confirmation via buttons (no text box)
-if st.session_state.step == 'awaiting_provider_switch':
-    col1, col2 = st.columns(2)
-    with col1:
-        if st.button("✅ Yes, switch provider"):
-            chat_bubble("Yes, switch provider.", sender='user')
-            bot_reply("yes")
-            update_progress_bar()
-            st.rerun()
-    with col2:
-        if st.button("❌ No, keep current"):
-            chat_bubble("No, keep current provider.", sender='user')
-            bot_reply("no")
-            update_progress_bar()
-            st.rerun()
-
-            
+# --- End Step ---
 if st.session_state.step == 'done':
-    chat_bubble("🙏 Thank you for using the assistant. Have a great day!", sender='bot')
+    chat_bubble("Your application has been successfully submitted!", sender='bot')
+    chat_bubble("You will receive a confirmation once your details are verified.", sender='bot')
