@@ -90,7 +90,7 @@ with st.sidebar:
 import streamlit as st
 
 # Header for the FAQ section
-st.header("FAQ")
+st.sidebar.header("FAQ")
 
 # FAQ dictionary
 faq = {
@@ -99,10 +99,11 @@ faq = {
     "What happens after I submit my application?": "Your details are sent to NLAD for verification. Most applications are processed in 1–2 business days."
 }
 
-# Display FAQ questions and answers with expand/collapse functionality
+# Display FAQ questions and answers with expand/collapse functionality in the sidebar
 for question, answer in faq.items():
-    with st.expander(question):  # Makes the answer collapsible
+    with st.sidebar.expander(question):  # Makes the answer collapsible in the sidebar
         st.write(answer)
+
 
 # --- Chat Bubble ---
 def chat_bubble(message, sender='bot', save_to_history=True):
