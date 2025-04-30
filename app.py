@@ -92,16 +92,6 @@ import streamlit as st
 # --- Custom Style for FAQ in Sidebar --- 
 st.sidebar.markdown("""
     <style>
-        .faq-title {
-            font-size: 16px;
-            font-weight: bold;
-            color: #0072bb;
-        }
-        .faq-answer {
-            font-size: 14px;
-            color: #333;
-            padding-left: 10px;
-        }
         .faq-container {
             margin-top: 20px;
             background-color: #f9f9f9;
@@ -111,6 +101,18 @@ st.sidebar.markdown("""
         }
         .faq-container:hover {
             background-color: #f1f1f1;
+        }
+        .faq-title {
+            font-size: 16px;
+            font-weight: bold;
+            color: #0072bb;
+            cursor: pointer;
+        }
+        .faq-answer {
+            font-size: 14px;
+            color: #333;
+            padding-left: 10px;
+            margin-top: 10px;
         }
     </style>
 """, unsafe_allow_html=True)
@@ -125,22 +127,11 @@ faq = {
     "What happens after I submit my application?": "Your details are sent to NLAD for verification. Most applications are processed in 1–2 business days."
 }
 
-# --- Display FAQ in Sidebar with Custom Styling ---
+# --- Display FAQ in Sidebar with Custom Collapsible Boxes ---
 for question, answer in faq.items():
     with st.sidebar.expander(question, expanded=False):
-        # Custom style for the FAQ answers
+        # Style for FAQ answers in expandable box
         st.sidebar.markdown(f"<div class='faq-answer'>{answer}</div>", unsafe_allow_html=True)
-
-        # Optional addition: Show an icon or interactive button for extra features
-        st.sidebar.markdown("""
-            <div class='faq-title'>
-                <span style="color: #0072bb;">🔍</span> 
-                <a href='https://example.com' target='_blank' style="text-decoration: none; color: #0072bb;">
-                    Click here for more info
-                </a>
-            </div>
-        """, unsafe_allow_html=True)
-
 
 # --- Chat Bubble ---
 def chat_bubble(message, sender='bot', save_to_history=True):
