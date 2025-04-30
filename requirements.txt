@@ -1,10 +1,5 @@
 opencv-python
 streamlit
 Pillow
-<<<<<<< HEAD
 ImageHash
 opencv-python
-=======
-numpy
-hashlib
->>>>>>> d3b880fe1f76e8c426c7e69fcf511da859a26cc9
