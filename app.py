@@ -304,7 +304,7 @@ if st.session_state.step == 'awaiting_confirmation':
         update_progress_bar()
         st.rerun()
 
-# Provider-switch confirmation via buttons (no text box)
+# --- Provider-switch confirmation via buttons (no text box) ---
 if st.session_state.step == 'awaiting_provider_switch':
     col1, col2 = st.columns(2)
     with col1:
@@ -318,21 +318,35 @@ if st.session_state.step == 'awaiting_provider_switch':
     with col2:
         if st.button("❌ No, keep current"):
             chat_bubble("No, keep current provider.", sender='user')
-            bot_reply("Thank you! If you need any other help, feel free to ask.")
+            bot_reply("⚠️ Please select 'yes' or 'no'.", sender='bot')
+            st.session_state.step = 'awaiting_final_confirmation'
+            update_progress_bar()
+            st.rerun()
+
+if st.session_state.step == 'awaiting_final_confirmation':
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("✅ Yes"):
+            chat_bubble("Yes, thank you!", sender='user')
+            bot_reply("🙏 Thank you for using our service. Have a great day!", sender='bot')
             st.session_state.step = 'done'
             update_progress_bar()
             st.rerun()
 
-if st.session_state.step == 'ask_new_provider':
-    with st.form("new_provider_form", clear_on_submit=True):
-        provider_name = st.text_input("Enter the name of your new provider:")
-        submitted = st.form_submit_button("➤")
-        if submitted and provider_name:
-            chat_bubble(f"Provider: {provider_name}", sender='user')
-            chat_bubble("Thank you! We will guide you through the process.", sender='bot')
-            st.session_state.step = 'done'
+    with col2:
+        if st.button("❌ No"):
+            chat_bubble("No, do not submit.", sender='user')
+            bot_reply("Do you need any other service?", sender='bot')
+            st.session_state.step = 'awaiting_query'
             update_progress_bar()
             st.rerun()
 
-if st.session_state.step == 'done':
-    chat_bubble("🙏 Thank you for using the assistant. Have a great day!", sender='bot')
+if st.session_state.step == 'awaiting_query':
+    user_query = st.text_input("Please type your query:")
+    if user_query:
+        chat_bubble(user_query, sender='user', save_to_history=False)  # Show the user input on the right
+        bot_reply("Your query will be answered soon.", sender='bot')
+        st.session_state.step = 'done'
+        update_progress_bar()
+        st.rerun()
+
