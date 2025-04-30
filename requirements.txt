@@ -1,3 +1,5 @@
+opencv-python
 streamlit
 Pillow
-ImageHash
+numpy
+hashlib
