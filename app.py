@@ -318,36 +318,7 @@ if st.session_state.step == 'awaiting_provider_switch':
     with col2:
         if st.button("❌ No, keep current"):
             chat_bubble("No, keep current provider.", sender='user')
-            st.session_state.step = 'awaiting_final_confirmation'
-            bot_reply("⚠️ Please select 'yes' or 'no'.", sender='bot')  # <- Fixed here
-            update_progress_bar()
-            st.rerun()
-
-# --- Awaiting final confirmation (Yes/No) ---
-if st.session_state.step == 'awaiting_final_confirmation':
-    col1, col2 = st.columns(2)
-    with col1:
-        if st.button("✅ Yes"):
-            chat_bubble("Yes, thank you!", sender='user')
             bot_reply("🙏 Thank you for using our service. Have a great day!", sender='bot')
             st.session_state.step = 'done'
             update_progress_bar()
             st.rerun()
-
-    with col2:
-        if st.button("❌ No"):
-            chat_bubble("No, do not submit.", sender='user')
-            bot_reply("Do you need any other service?", sender='bot')
-            st.session_state.step = 'awaiting_query'
-            update_progress_bar()
-            st.rerun()
-
-# --- Awaiting query (when user clicks No to final confirmation) ---
-if st.session_state.step == 'awaiting_query':
-    user_query = st.text_input("Please type your query:")
-    if user_query:
-        chat_bubble(user_query, sender='user', save_to_history=False)
-        bot_reply("Your query will be answered soon.", sender='bot')
-        st.session_state.step = 'done'
-        update_progress_bar()
-        st.rerun()
