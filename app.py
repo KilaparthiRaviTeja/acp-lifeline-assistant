@@ -187,6 +187,7 @@ def bot_reply(user_input):
             st.session_state.confirmed = True
             st.session_state.step = 'done'
             chat_bubble("✅ Details submitted to NLAD.", sender='bot')
+            chat_bubble("🙏 Thank you for using the assistant.Have a Great Day!", sender='bot')
         elif user_input.strip().lower() == 'no':
             chat_bubble("Okay, let us know when you're ready!", sender='bot')
         else:
