@@ -7,7 +7,6 @@ import base64
 from PIL import Image
 import hashlib
 import numpy as np
-import cv2
 
 # --- Page Config ---
 st.set_page_config(page_title="ACP/Lifeline Assistant", layout="wide")
@@ -243,77 +242,35 @@ if st.session_state.step == 'start':
         st.session_state.user_type = 'existing'
         st.session_state.step = 'ask_id_type'
         chat_bubble("Existing user selected.", sender='user')
-        chat_bubble("What type of ID will you use?", sender='bot')
+        chat_bubble("Please provide your existing ID.", sender='bot')
 
 if st.session_state.step == 'ask_id_type':
-    col1, col2 = st.columns(2)
-    if col1.button("SSN"):
-        st.session_state.id_type = 'ssn'
-        st.session_state.step = 'awaiting_id'
-        chat_bubble("SSN selected.", sender='user')
-        chat_bubble("Please enter your SSN (format: 123-45-6789).", sender='bot')
-
-    if col2.button("Tribal ID"):
-        st.session_state.id_type = 'tribal'
-        st.session_state.step = 'awaiting_id'
-        chat_bubble("Tribal ID selected.", sender='user')
-        chat_bubble("Please enter your Tribal ID (at least 5 digits).", sender='bot')
-
-if st.session_state.step == 'awaiting_id':
-    with st.form("id_form", clear_on_submit=True):
-        user_input = st.text_input("Enter your ID:")
-        submitted = st.form_submit_button("Submit")
-        if submitted:
-            bot_reply(user_input)
+    if st.session_state.user_type == 'new':
+        col1, col2 = st.columns(2)
+        if col1.button("SSN"):
+            st.session_state.id_type = 'ssn'
+            chat_bubble("SSN selected. Please provide your SSN.", sender='bot')
+        if col2.button("Tribal ID"):
+            st.session_state.id_type = 'tribal'
+            chat_bubble("Tribal ID selected. Please provide your Tribal ID.", sender='bot')
+    else:
+        chat_bubble("Please provide your existing ID.", sender='bot')
 
 if st.session_state.step == 'awaiting_photo':
-    uploaded_files = st.file_uploader("Upload your photo(s) (jpg/png/jfif, max 5MB each)", type=["jpg", "jpeg", "png", "jfif"], accept_multiple_files=True)
-    
-    if uploaded_files:
-        valid_files = []
-        for uploaded_file in uploaded_files:
-            if uploaded_file.size > 5 * 1024 * 1024:
-                chat_bubble(f"⚠️ {uploaded_file.name} is too large (>5MB).", sender='bot')
-            else:
-                valid_files.append(uploaded_file)
+    uploaded_file = st.file_uploader("Upload your photo for verification.", type=["jpg", "jpeg", "png"])
+    if uploaded_file:
+        image_hash = generate_image_hash(Image.open(uploaded_file))
+        if image_hash in st.session_state.uploaded_hashes:
+            chat_bubble("⚠️ This photo is a duplicate.", sender='bot')
+            st.session_state.duplicate = True
+        else:
+            st.session_state.uploaded_hashes.append(image_hash)
+            chat_bubble("✅ Photo uploaded successfully.", sender='bot')
+            st.session_state.photo_uploaded = True
+        update_progress_bar()
 
-        if valid_files:
-            for file in valid_files:
-                image = Image.open(file).convert("RGB")
-                image_hash = generate_image_hash(image)
-
-                # Check for duplicate hash
-                if image_hash in st.session_state.uploaded_hashes:
-                    st.warning("⚠️ This photo appears to be a duplicate.")
-                    change_provider = st.radio("It seems that you already exist in the system. Do you want to change your provider?", 
-                                               ["No, keep the existing provider", "Yes, change the provider"])
-
-                    if change_provider == "Yes, change the provider":
-                        st.session_state.user_provider = st.text_input("Enter your new provider name:")
-                        st.success("✅ Provider changed successfully!")
-                    else:
-                        st.session_state.user_provider = "Existing Provider"
-                        st.success("✅ Proceeding with the existing provider.")
-                    st.session_state.photo_uploaded = False
-                else:
-                    st.session_state.uploaded_hashes.append(image_hash)
-                    st.session_state.photo_uploaded = True
-                    st.success("✅ Photo uploaded successfully!")
-
-                col1, col2 = st.columns([2, 1])
-                with col1:
-                    st.image(image, caption="Uploaded Photo", use_column_width=True)
-                with col2:
-                    st.success("✅ Your photo looks clear!")
-
-            photo_hashes = [p['hash'] for p in st.session_state.photos]
-            if check_duplicate(st.session_state.user_id, photo_hashes):
-                st.session_state.duplicate = True
-                st.session_state.step = 'awaiting_provider_switch'
-                chat_bubble("⚠️ Duplicate detected. Switch provider?", sender='bot')
-            else:
-                st.session_state.step = 'awaiting_confirmation'
-                chat_bubble("✅ No duplicate found. Submit to NLAD?", sender='bot')
-
-            update_progress_bar()
-            st.rerun()
+# --- User Input ---
+user_input = st.text_input("Your message:")
+if user_input:
+    chat_bubble(user_input, sender='user')
+    bot_reply(user_input)
