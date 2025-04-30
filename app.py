@@ -240,26 +240,88 @@ if st.session_state.step == 'ask_id_type':
 
 if st.session_state.step == 'awaiting_id':
     with st.form("id_form", clear_on_submit=True):
-        user_input = st.text_input("Enter ID:")
-        submit_button = st.form_submit_button(label="Submit")
-        if submit_button:
+        user_input = st.text_input("Enter your ID:")
+        submitted = st.form_submit_button("➤")
+        if submitted and user_input:
+            chat_bubble(user_input, sender='user')
             bot_reply(user_input)
 
 if st.session_state.step == 'awaiting_photo':
-    chat_bubble("Please upload your photo(s).", sender='bot')
-    uploaded_files = st.file_uploader("Upload Photo", accept_multiple_files=True, type=["jpg", "jpeg", "png"])
+    uploaded_files = st.file_uploader(
+        "Upload your photo(s) (jpg/png/jfif, max 5MB each)",
+        type=["jpg", "jpeg", "png", "jfif"],
+        accept_multiple_files=True
+    )
     if uploaded_files:
+        valid_files = []
         for uploaded_file in uploaded_files:
-            st.session_state.photos.append(uploaded_file)
+            if uploaded_file.size > 5 * 1024 * 1024:
+                chat_bubble(f"⚠️ {uploaded_file.name} is too large (>5MB).", sender='bot')
+            else:
+                valid_files.append(uploaded_file)
 
-    if len(st.session_state.photos) > 0:
-        st.session_state.step = 'awaiting_confirmation'
-        chat_bubble("You have uploaded a photo. Is this information correct?", sender='bot')
-        with st.form("confirm_form"):
-            confirmation = st.radio("Confirm", ["Yes", "No"])
-            submit_button = st.form_submit_button(label="Submit")
-            if submit_button:
-                bot_reply(confirmation)
+        if valid_files:
+            for file in valid_files:
+                # 1. Compute and store hash
+                file_hash = get_image_hash(file)
+                st.session_state.photos.append({"file": file, "hash": file_hash})
 
+                # 2. Build Base64 data URI
+                file_bytes = file.getvalue()
+                b64 = base64.b64encode(file_bytes).decode()
+                img_html = (
+                    f"📸 {file.name}<br>"
+                    f"<img src='data:image/png;base64,{b64}' "
+                    f"style='max-width:200px;border-radius:8px;'/>"
+                )
+
+                # 3. Inject into the chat bubble as HTML
+                chat_bubble(img_html, sender='bot')
+
+            # 4. Move on to next step
+            photo_hashes = [p['hash'] for p in st.session_state.photos]
+            if check_duplicate(st.session_state.user_id, photo_hashes):
+                st.session_state.duplicate = True
+                st.session_state.step = 'awaiting_provider_switch'
+                chat_bubble("⚠️ Duplicate detected. Switch provider?", sender='bot')
+            else:
+                st.session_state.step = 'awaiting_confirmation'
+                chat_bubble("✅ No duplicate found. Submit to NLAD?", sender='bot')
+
+            update_progress_bar()
+            st.rerun()
+
+
+if st.session_state.step == 'awaiting_confirmation':
+    col1, col2 = st.columns(2)
+    if col1.button("✅ Yes"):
+        chat_bubble("Yes, submit to NLAD.", sender='user')
+        bot_reply("yes")
+        update_progress_bar()
+        st.rerun()
+
+    if col2.button("❌ No"):
+        chat_bubble("No, do not submit.", sender='user')
+        bot_reply("no")
+        update_progress_bar()
+        st.rerun()
+
+# Provider-switch confirmation via buttons (no text box)
+if st.session_state.step == 'awaiting_provider_switch':
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button("✅ Yes, switch provider"):
+            chat_bubble("Yes, switch provider.", sender='user')
+            bot_reply("yes")
+            update_progress_bar()
+            st.rerun()
+    with col2:
+        if st.button("❌ No, keep current"):
+            chat_bubble("No, keep current provider.", sender='user')
+            bot_reply("no")
+            update_progress_bar()
+            st.rerun()
+
+            
 if st.session_state.step == 'done':
-    chat_bubble("Your application has been completed. Thank you!", sender='bot')
+    chat_bubble("🙏 Thank you for using the assistant. Have a great day!", sender='bot')
