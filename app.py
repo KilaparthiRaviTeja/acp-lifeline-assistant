@@ -89,8 +89,8 @@ with st.sidebar:
 
 import streamlit as st
 
-# --- Custom Style for FAQ --- 
-st.markdown("""
+# --- Custom Style for FAQ in Sidebar --- 
+st.sidebar.markdown("""
     <style>
         .faq-title {
             font-size: 16px;
@@ -115,8 +115,8 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# --- Header for FAQ Section ---
-st.header("Frequently Asked Questions")
+# --- Sidebar FAQ Header ---
+st.sidebar.header("Frequently Asked Questions")
 
 # --- FAQ Dictionary ---
 faq = {
@@ -125,14 +125,14 @@ faq = {
     "What happens after I submit my application?": "Your details are sent to NLAD for verification. Most applications are processed in 1–2 business days."
 }
 
-# --- Display FAQ with Custom Styling ---
+# --- Display FAQ in Sidebar with Custom Styling ---
 for question, answer in faq.items():
-    with st.expander(question, expanded=False):
+    with st.sidebar.expander(question, expanded=False):
         # Custom style for the FAQ answers
-        st.markdown(f"<div class='faq-answer'>{answer}</div>", unsafe_allow_html=True)
+        st.sidebar.markdown(f"<div class='faq-answer'>{answer}</div>", unsafe_allow_html=True)
 
         # Optional addition: Show an icon or interactive button for extra features
-        st.markdown("""
+        st.sidebar.markdown("""
             <div class='faq-title'>
                 <span style="color: #0072bb;">🔍</span> 
                 <a href='https://example.com' target='_blank' style="text-decoration: none; color: #0072bb;">
@@ -140,6 +140,7 @@ for question, answer in faq.items():
                 </a>
             </div>
         """, unsafe_allow_html=True)
+
 
 # --- Chat Bubble ---
 def chat_bubble(message, sender='bot', save_to_history=True):
