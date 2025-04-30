@@ -87,16 +87,59 @@ with st.sidebar:
             if st.button("❌ No, Cancel"):
                 st.session_state.awaiting_reset_confirm = False
 
-    # FAQ
-    st.header("FAQ")
-    faq = {
-        "How do I apply for ACP or Lifeline?": "You can apply by providing your ID, uploading a photo, and confirming your details.",
-        "What documents are needed for verification?": "We need either your SSN or Tribal ID, along with a recent photo.",
-        "What happens after I submit my application?": "Your details are sent to NLAD for verification. Most applications are processed in 1–2 business days."
-    }
-    for question, answer in faq.items():
-        if st.button(question):
-            st.info(answer)
+import streamlit as st
+
+# --- Custom Style for FAQ --- 
+st.markdown("""
+    <style>
+        .faq-title {
+            font-size: 16px;
+            font-weight: bold;
+            color: #0072bb;
+        }
+        .faq-answer {
+            font-size: 14px;
+            color: #333;
+            padding-left: 10px;
+        }
+        .faq-container {
+            margin-top: 20px;
+            background-color: #f9f9f9;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .faq-container:hover {
+            background-color: #f1f1f1;
+        }
+    </style>
+""", unsafe_allow_html=True)
+
+# --- Header for FAQ Section ---
+st.header("Frequently Asked Questions")
+
+# --- FAQ Dictionary ---
+faq = {
+    "How do I apply for ACP or Lifeline?": "You can apply by providing your ID, uploading a photo, and confirming your details.",
+    "What documents are needed for verification?": "We need either your SSN or Tribal ID, along with a recent photo.",
+    "What happens after I submit my application?": "Your details are sent to NLAD for verification. Most applications are processed in 1–2 business days."
+}
+
+# --- Display FAQ with Custom Styling ---
+for question, answer in faq.items():
+    with st.expander(question, expanded=False):
+        # Custom style for the FAQ answers
+        st.markdown(f"<div class='faq-answer'>{answer}</div>", unsafe_allow_html=True)
+
+        # Optional addition: Show an icon or interactive button for extra features
+        st.markdown("""
+            <div class='faq-title'>
+                <span style="color: #0072bb;">🔍</span> 
+                <a href='https://example.com' target='_blank' style="text-decoration: none; color: #0072bb;">
+                    Click here for more info
+                </a>
+            </div>
+        """, unsafe_allow_html=True)
 
 # --- Chat Bubble ---
 def chat_bubble(message, sender='bot', save_to_history=True):
