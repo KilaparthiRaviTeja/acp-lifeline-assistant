@@ -202,7 +202,6 @@ def bot_reply(user_input):
         else:
             chat_bubble("⚠️ Please select 'yes' or 'no'.", sender='bot')
 
-
 # --- Main Chat Area ---
 send_reminder()
 
@@ -242,8 +241,7 @@ if st.session_state.step == 'awaiting_id':
     with st.form("id_form", clear_on_submit=True):
         user_input = st.text_input("Enter your ID:")
         submitted = st.form_submit_button("➤")
-        if submitted and user_input:
-            chat_bubble(user_input, sender='user')
+        if submitted:
             bot_reply(user_input)
 
 if st.session_state.step == 'awaiting_photo':
@@ -283,14 +281,13 @@ if st.session_state.step == 'awaiting_photo':
             if check_duplicate(st.session_state.user_id, photo_hashes):
                 st.session_state.duplicate = True
                 st.session_state.step = 'awaiting_provider_switch'
-                chat_bubble("⚠️ Duplicate detected. Switch provider?", sender='bot')
+                chat_bubble("⚠️ Duplicate detected. Would you like to switch provider?", sender='bot')
             else:
                 st.session_state.step = 'awaiting_confirmation'
-                chat_bubble("✅ No duplicate found. Submit to NLAD?", sender='bot')
+                chat_bubble("✅ No duplicate found. Would you like to submit to NLAD?", sender='bot')
 
             update_progress_bar()
             st.rerun()
-
 
 if st.session_state.step == 'awaiting_confirmation':
     col1, col2 = st.columns(2)
@@ -312,16 +309,29 @@ if st.session_state.step == 'awaiting_provider_switch':
     with col1:
         if st.button("✅ Yes, switch provider"):
             chat_bubble("Yes, switch provider.", sender='user')
-            bot_reply("yes")
-            update_progress_bar()
-            st.rerun()
-    with col2:
-        if st.button("❌ No, keep current"):
-            chat_bubble("No, keep current provider.", sender='user')
-            bot_reply("no")
+            st.session_state.step = 'ask_new_provider'
+            bot_reply("Please enter the name of the new provider.")
             update_progress_bar()
             st.rerun()
 
-            
+    with col2:
+        if st.button("❌ No, keep current"):
+            chat_bubble("No, keep current provider.", sender='user')
+            bot_reply("Thank you! If you need any other help, feel free to ask.")
+            st.session_state.step = 'done'
+            update_progress_bar()
+            st.rerun()
+
+if st.session_state.step == 'ask_new_provider':
+    with st.form("new_provider_form", clear_on_submit=True):
+        provider_name = st.text_input("Enter the name of your new provider:")
+        submitted = st.form_submit_button("➤")
+        if submitted and provider_name:
+            chat_bubble(f"Provider: {provider_name}", sender='user')
+            chat_bubble("Thank you! We will guide you through the process.", sender='bot')
+            st.session_state.step = 'done'
+            update_progress_bar()
+            st.rerun()
+
 if st.session_state.step == 'done':
     chat_bubble("🙏 Thank you for using the assistant. Have a great day!", sender='bot')
