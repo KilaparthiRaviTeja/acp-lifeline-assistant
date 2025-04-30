@@ -1,4 +1,4 @@
-streamlit
 Pillow
-ImageHash
-
+imagehash
+numpy
+streamlit
