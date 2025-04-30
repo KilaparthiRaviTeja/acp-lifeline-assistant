@@ -317,4 +317,3 @@ if st.session_state.step == 'awaiting_photo':
 
             update_progress_bar()
             st.rerun()
-
