@@ -175,7 +175,7 @@ def bot_reply(user_input):
         if validate_id(user_input):
             st.session_state.user_id = user_input
             st.session_state.step = 'awaiting_photo'
-            chat_bubble("✅ ID confirmed. Now please upload your photo(s) for verification.", sender='bot')
+            chat_bubble(f"✅ SSN: {user_input} confirmed. Now please upload your photo(s) for verification.", sender='bot')
             update_progress_bar()
             st.rerun()  # <-- THIS forces Streamlit to immediately refresh the page based on new step
         else:
@@ -242,6 +242,7 @@ if st.session_state.step == 'awaiting_id':
         user_input = st.text_input("Enter your ID:")
         submitted = st.form_submit_button("➤")
         if submitted:
+            chat_bubble(user_input, sender='user', save_to_history=False)  # Show the user input on the right
             bot_reply(user_input)
 
 if st.session_state.step == 'awaiting_photo':
