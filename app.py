@@ -89,49 +89,20 @@ with st.sidebar:
 
 import streamlit as st
 
-# --- Custom Style for FAQ in Sidebar --- 
-st.sidebar.markdown("""
-    <style>
-        .faq-container {
-            margin-top: 20px;
-            background-color: #f9f9f9;
-            padding: 15px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
-        .faq-container:hover {
-            background-color: #f1f1f1;
-        }
-        .faq-title {
-            font-size: 16px;
-            font-weight: bold;
-            color: #0072bb;
-            cursor: pointer;
-        }
-        .faq-answer {
-            font-size: 14px;
-            color: #333;
-            padding-left: 10px;
-            margin-top: 10px;
-        }
-    </style>
-""", unsafe_allow_html=True)
+# Header for the FAQ section
+st.header("FAQ")
 
-# --- Sidebar FAQ Header ---
-st.sidebar.header("Frequently Asked Questions")
-
-# --- FAQ Dictionary ---
+# FAQ dictionary
 faq = {
     "How do I apply for ACP or Lifeline?": "You can apply by providing your ID, uploading a photo, and confirming your details.",
     "What documents are needed for verification?": "We need either your SSN or Tribal ID, along with a recent photo.",
     "What happens after I submit my application?": "Your details are sent to NLAD for verification. Most applications are processed in 1–2 business days."
 }
 
-# --- Display FAQ in Sidebar with Custom Collapsible Boxes ---
+# Display FAQ questions and answers with expand/collapse functionality
 for question, answer in faq.items():
-    with st.sidebar.expander(question, expanded=False):
-        # Style for FAQ answers in expandable box
-        st.sidebar.markdown(f"<div class='faq-answer'>{answer}</div>", unsafe_allow_html=True)
+    with st.expander(question):  # Makes the answer collapsible
+        st.write(answer)
 
 # --- Chat Bubble ---
 def chat_bubble(message, sender='bot', save_to_history=True):
