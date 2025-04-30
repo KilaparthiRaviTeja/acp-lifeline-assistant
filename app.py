@@ -5,6 +5,9 @@ import time
 import imagehash
 import base64
 from PIL import Image
+import hashlib
+import numpy as np
+import cv2
 
 # --- Page Config ---
 st.set_page_config(page_title="ACP/Lifeline Assistant", layout="wide")
@@ -48,7 +51,10 @@ if 'step' not in st.session_state:
         'chat_history': [],
         'progress': 0,
         'awaiting_reset_confirm': False,
-        'reminder_sent': False
+        'reminder_sent': False,
+        'uploaded_hashes': [],
+        'user_provider': None,
+        'photo_uploaded': False
     })
 
 # --- Sidebar ---
@@ -79,7 +85,10 @@ with st.sidebar:
                         'chat_history': [],
                         'progress': 0,
                         'awaiting_reset_confirm': False,
-                        'reminder_sent': False
+                        'reminder_sent': False,
+                        'uploaded_hashes': [],
+                        'user_provider': None,
+                        'photo_uploaded': False
                     })
                     st.rerun()
                 reset_session()
@@ -131,6 +140,18 @@ def get_image_hash(uploaded_file):
     image = Image.open(BytesIO(uploaded_file.getvalue()))
     return str(imagehash.average_hash(image))
 
+def generate_image_hash(image: Image) -> str:
+    image = image.convert('L')
+    image = image.resize((8, 8))
+    image_data = np.array(image).flatten()
+    
+    avg = np.mean(image_data)
+    diff = image_data > avg
+    hash_string = ''.join(['1' if b else '0' for b in diff])
+    hash_hex = hex(int(hash_string, 2))[2:]
+    
+    return hash_hex
+
 def check_duplicate(user_id, photo_hashes):
     existing_records = [
         {"id": "123-45-6789", "photo_hash": "abcd1234"},
@@ -142,7 +163,7 @@ def check_duplicate(user_id, photo_hashes):
     return False
 
 def save_user_data():
-    pass  # You can add logic to save to your database
+    pass
 
 def update_progress_bar():
     target_progress = {
@@ -177,7 +198,7 @@ def bot_reply(user_input):
             st.session_state.step = 'awaiting_photo'
             chat_bubble("✅ ID confirmed. Now please upload your photo(s) for verification.", sender='bot')
             update_progress_bar()
-            st.rerun()  # <-- THIS forces Streamlit to immediately refresh the page based on new step
+            st.rerun()  
         else:
             chat_bubble("⚠️ Invalid ID format.", sender='bot')
 
@@ -241,17 +262,13 @@ if st.session_state.step == 'ask_id_type':
 if st.session_state.step == 'awaiting_id':
     with st.form("id_form", clear_on_submit=True):
         user_input = st.text_input("Enter your ID:")
-        submitted = st.form_submit_button("➤")
-        if submitted and user_input:
-            chat_bubble(user_input, sender='user')
+        submitted = st.form_submit_button("Submit")
+        if submitted:
             bot_reply(user_input)
 
 if st.session_state.step == 'awaiting_photo':
-    uploaded_files = st.file_uploader(
-        "Upload your photo(s) (jpg/png/jfif, max 5MB each)",
-        type=["jpg", "jpeg", "png", "jfif"],
-        accept_multiple_files=True
-    )
+    uploaded_files = st.file_uploader("Upload your photo(s) (jpg/png/jfif, max 5MB each)", type=["jpg", "jpeg", "png", "jfif"], accept_multiple_files=True)
+    
     if uploaded_files:
         valid_files = []
         for uploaded_file in uploaded_files:
@@ -262,23 +279,33 @@ if st.session_state.step == 'awaiting_photo':
 
         if valid_files:
             for file in valid_files:
-                # 1. Compute and store hash
-                file_hash = get_image_hash(file)
-                st.session_state.photos.append({"file": file, "hash": file_hash})
+                image = Image.open(file).convert("RGB")
+                image_hash = generate_image_hash(image)
 
-                # 2. Build Base64 data URI
-                file_bytes = file.getvalue()
-                b64 = base64.b64encode(file_bytes).decode()
-                img_html = (
-                    f"📸 {file.name}<br>"
-                    f"<img src='data:image/png;base64,{b64}' "
-                    f"style='max-width:200px;border-radius:8px;'/>"
-                )
+                # Check for duplicate hash
+                if image_hash in st.session_state.uploaded_hashes:
+                    st.warning("⚠️ This photo appears to be a duplicate.")
+                    change_provider = st.radio("It seems that you already exist in the system. Do you want to change your provider?", 
+                                               ["No, keep the existing provider", "Yes, change the provider"])
 
-                # 3. Inject into the chat bubble as HTML
-                chat_bubble(img_html, sender='bot')
+                    if change_provider == "Yes, change the provider":
+                        st.session_state.user_provider = st.text_input("Enter your new provider name:")
+                        st.success("✅ Provider changed successfully!")
+                    else:
+                        st.session_state.user_provider = "Existing Provider"
+                        st.success("✅ Proceeding with the existing provider.")
+                    st.session_state.photo_uploaded = False
+                else:
+                    st.session_state.uploaded_hashes.append(image_hash)
+                    st.session_state.photo_uploaded = True
+                    st.success("✅ Photo uploaded successfully!")
 
-            # 4. Move on to next step
+                col1, col2 = st.columns([2, 1])
+                with col1:
+                    st.image(image, caption="Uploaded Photo", use_column_width=True)
+                with col2:
+                    st.success("✅ Your photo looks clear!")
+
             photo_hashes = [p['hash'] for p in st.session_state.photos]
             if check_duplicate(st.session_state.user_id, photo_hashes):
                 st.session_state.duplicate = True
@@ -290,38 +317,3 @@ if st.session_state.step == 'awaiting_photo':
 
             update_progress_bar()
             st.rerun()
-
-
-if st.session_state.step == 'awaiting_confirmation':
-    col1, col2 = st.columns(2)
-    if col1.button("✅ Yes"):
-        chat_bubble("Yes, submit to NLAD.", sender='user')
-        bot_reply("yes")
-        update_progress_bar()
-        st.rerun()
-
-    if col2.button("❌ No"):
-        chat_bubble("No, do not submit.", sender='user')
-        bot_reply("no")
-        update_progress_bar()
-        st.rerun()
-
-# Provider-switch confirmation via buttons (no text box)
-if st.session_state.step == 'awaiting_provider_switch':
-    col1, col2 = st.columns(2)
-    with col1:
-        if st.button("✅ Yes, switch provider"):
-            chat_bubble("Yes, switch provider.", sender='user')
-            bot_reply("yes")
-            update_progress_bar()
-            st.rerun()
-    with col2:
-        if st.button("❌ No, keep current"):
-            chat_bubble("No, keep current provider.", sender='user')
-            bot_reply("no")
-            update_progress_bar()
-            st.rerun()
-
-            
-if st.session_state.step == 'done':
-    chat_bubble("🙏 Thank you for using the assistant. Have a great day!", sender='bot')
