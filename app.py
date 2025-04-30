@@ -321,7 +321,6 @@ if st.session_state.step == 'awaiting_provider_switch':
             update_progress_bar()
             st.rerun()
 
-# --- Ask new provider name ---
 if st.session_state.step == 'ask_new_provider':
     with st.form("provider_form", clear_on_submit=True):
         provider_name = st.text_input("Please enter the name of the new provider:")
@@ -329,12 +328,12 @@ if st.session_state.step == 'ask_new_provider':
         if submitted and provider_name:
             chat_bubble(provider_name, sender='user')
             st.session_state.step = 'done'
-           st.session_state.chat_history.append({
-               "sender": "bot",
-               "text": "✅ Thank you. We will guide you through the switching process."
-           })
-
+            st.session_state.chat_history.append({
+                "sender": "bot",
+                "text": "✅ Thank you. We will guide you through the switching process."
+            })
             update_progress_bar()
             st.rerun()
+
 
 
